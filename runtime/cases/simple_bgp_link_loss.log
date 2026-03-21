@@ -1,0 +1,178 @@
+2026-03-17 13:02:14 [INFO] SystemLogger: 
+🚀 【测试】环境: [simple_bgp] -> 故障: [link_loss]
+2026-03-17 13:02:14 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (simple_bgp via simple_bgp.py)...
+2026-03-17 13:02:14 [INFO] SystemLogger: [Error] ❌ 拓扑部署失败:
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+OSError: [Errno 113] No route to host
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 500, in request
+    self.endheaders()
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1333, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1093, in _send_output
+    self.send(msg)
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1037, in send
+    self.connect()
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host
+
+The above exception was the direct cause of the following exception:
+
+urllib3.exceptions.ProxyError: ('Unable to connect to proxy', NewConnectionError("HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host"))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='192.168.1.11', port=10810): Max retries exceeded with url: http://192.168.1.33:26668/re/project/simple_bgp/?user=tmx18 (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host")))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/src/net_env/simple_bgp.py", line 70, in <module>
+    Lab_BGP = BGPRouting()
+              ^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/src/net_env/simple_bgp.py", line 18, in __init__
+    super().__init__(lab_name=lab_name)
+  File "/home/lzl/tmx/PlayGround/src/net_env/base_netenv.py", line 41, in __init__
+    if self.lab.is_topo_deployed:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/KlonetAPI/klonet.py", line 99, in is_topo_deployed
+    response = self.remote_topo
+               ^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/KlonetAPI/klonet.py", line 117, in remote_topo
+    response = requests.get(url)
+               ^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/adapters.py", line 671, in send
+    raise ProxyError(e, request=request)
+requests.exceptions.ProxyError: HTTPConnectionPool(host='192.168.1.11', port=10810): Max retries exceeded with url: http://192.168.1.33:26668/re/project/simple_bgp/?user=tmx18 (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host")))
+
+2026-03-17 13:02:14 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-17 13:02:19 [ERROR] SystemLogger: 测试用例 link_loss 异常: 无法连接到 Klonet 后端或项目 simple_bgp!
+2026-03-17 13:02:19 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (simple_bgp)...
+2026-03-17 13:44:25 [INFO] SystemLogger: 
+🚀 【测试】环境: [simple_bgp] -> 故障: [link_loss]
+2026-03-17 13:44:25 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (simple_bgp via simple_bgp.py)...
+2026-03-17 13:44:25 [INFO] SystemLogger: [Error] ❌ 拓扑部署失败:
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+OSError: [Errno 113] No route to host
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 500, in request
+    self.endheaders()
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1333, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1093, in _send_output
+    self.send(msg)
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1037, in send
+    self.connect()
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: HTTPConnection(host='192.168.1.33', port=26668): Failed to establish a new connection: [Errno 113] No route to host
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='192.168.1.33', port=26668): Max retries exceeded with url: /re/project/simple_bgp/?user=tmx18 (Caused by NewConnectionError("HTTPConnection(host='192.168.1.33', port=26668): Failed to establish a new connection: [Errno 113] No route to host"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/src/net_env/simple_bgp.py", line 70, in <module>
+    Lab_BGP = BGPRouting()
+              ^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/src/net_env/simple_bgp.py", line 18, in __init__
+    super().__init__(lab_name=lab_name)
+  File "/home/lzl/tmx/PlayGround/src/net_env/base_netenv.py", line 41, in __init__
+    if self.lab.is_topo_deployed:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/KlonetAPI/klonet.py", line 99, in is_topo_deployed
+    response = self.remote_topo
+               ^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/KlonetAPI/klonet.py", line 117, in remote_topo
+    response = requests.get(url)
+               ^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='192.168.1.33', port=26668): Max retries exceeded with url: /re/project/simple_bgp/?user=tmx18 (Caused by NewConnectionError("HTTPConnection(host='192.168.1.33', port=26668): Failed to establish a new connection: [Errno 113] No route to host"))
+
+2026-03-17 13:44:25 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-17 13:44:29 [ERROR] SystemLogger: 测试用例 link_loss 异常: 无法连接到 Klonet 后端或项目 simple_bgp!
+2026-03-17 13:44:29 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (simple_bgp)...

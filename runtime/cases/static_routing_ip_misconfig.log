@@ -1,0 +1,445 @@
+2026-03-16 11:47:21 [INFO] SystemLogger: 
+==================================================
+2026-03-16 11:47:21 [INFO] SystemLogger: 🚀 测试用例: [ip_misconfig] -> 预期: [ip_misconfig]
+2026-03-16 11:47:21 [INFO] SystemLogger: ==================================================
+2026-03-16 11:47:21 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-16 11:48:21 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-16 11:48:25 [ERROR] SystemLogger: 测试用例 ip_misconfig 异常: cannot unpack non-iterable NoneType object
+2026-03-16 11:48:25 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-16 11:48:30 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-16 11:51:27 [INFO] SystemLogger: 
+==================================================
+2026-03-16 11:51:27 [INFO] SystemLogger: 🚀 测试用例: [ip_misconfig] -> 预期: [ip_misconfig]
+2026-03-16 11:51:27 [INFO] SystemLogger: ==================================================
+2026-03-16 11:51:27 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-16 11:52:28 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-16 11:52:32 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-16 11:52:32 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-16 11:52:35 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-16 11:52:35 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-16 11:52:35 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-16 11:52:35 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-16 11:53:11 [INFO] SystemLogger: >>> Node 2: Running Objective Evaluation...
+2026-03-16 11:53:11 [INFO] SystemLogger: >>> Node 3: Running Subjective Evaluation (Judge)...
+2026-03-16 11:53:14 [ERROR] SystemLogger: 测试用例 ip_misconfig 异常: write() argument must be str, not tuple
+2026-03-16 11:53:14 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-16 11:53:19 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-16 12:00:12 [INFO] SystemLogger: 🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-16 12:00:12 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-16 12:01:12 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-16 12:01:16 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-16 12:01:16 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-16 12:01:18 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-16 12:01:18 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-16 12:01:18 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-16 12:01:18 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-16 12:01:49 [INFO] SystemLogger: >>> Node 2: Running Objective Evaluation...
+2026-03-16 12:01:49 [INFO] SystemLogger: >>> Node 3: Running Subjective Evaluation (Judge)...
+2026-03-16 12:01:52 [INFO] SystemLogger: 📝 报告已完成: /home/lzl/tmx/PlayGround/results/static_routing环境ip_misconfig故障诊断报告.md
+2026-03-16 12:01:52 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-16 12:01:57 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-17 12:21:25 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-17 12:21:25 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-17 12:22:32 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-17 12:22:36 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-17 12:22:36 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-17 12:22:38 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-17 12:22:38 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-17 12:22:39 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-17 12:22:39 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-17 12:22:52 [INFO] SystemLogger: 🤔 [Thought]: 我需要先理解当前的故障情况。用户投诉主机 None 无法正常 Ping 通节点 None，网络完全不可达，疑似路由问题。但这里的主机和目标节点都是 None，这看起来像是信息缺失。
+
+让我先尝试从某个主机开始进行连通性测试，以了解网络的实际状态。根据拓扑信息，我有 h1-h6 这些主机。让我先尝试从 h1 ping 一个目标，看看是否能发现具体问题。
+
+首先，我需要确定故障的具体表现。让我从 h1 开始，尝试 ping 一个跨网段的目标，比如 h3（192.168.2.2），因为 h1 在 192.168.1.x 网段，h3 在 192.168.2.x 网段，需要跨路由器通信。
+2026-03-17 12:22:52 [INFO] SystemLogger: 🛠️ [Action]: Call 'ping_by_ip' with {'src_node': 'h1', 'dst_ip': '192.168.2.2'}
+2026-03-17 12:22:53 [INFO] SystemLogger: 👁️ [Observation from ping_by_ip]: connect: Network is unreachable
+2026-03-17 12:22:56 [INFO] SystemLogger: 🤔 [Thought]: 从 h1 ping 192.168.2.2 显示 "Network is unreachable"，这表明 h1 无法找到到达目标的路由。这可能是 h1 的默认路由缺失，或者中间路由器的问题。
+
+让我先检查 h1 的路由表，确认是否有默认网关配置。
+2026-03-17 12:22:56 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_default_route_missing' with {'host': 'h1'}
+2026-03-17 12:22:57 [INFO] SystemLogger: 👁️ [Observation from check_default_route_missing]: 10.0.0.0/24 dev tos1_1 proto kernel scope link src 10.0.0.0
+2026-03-17 12:23:02 [INFO] SystemLogger: 🤔 [Thought]: 发现问题了！h1 的路由表中没有默认路由（default via）。根据拓扑信息，h1 的默认网关应该是 192.168.1.1，但路由表中只显示了一个 10.0.0.0/24 的路由，没有 default via 192.168.1.1 的条目。
+
+这看起来是 h1 的默认路由缺失问题。让我再确认一下 h1 的 IP 配置是否正确，以及接口状态是否正常。
+2026-03-17 12:23:02 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_ip_misconfig' with {'host': 'h1', 'iface': 'tos1_1'}
+2026-03-17 12:23:03 [INFO] SystemLogger: 👁️ [Observation from check_ip_misconfig]: 3: tos1_1@if6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 12:e1:dc:6e:68:a3 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet 10.0.0.0/24 scope global tos1_1
+       valid_lft forever preferred_lft forever
+[专家提示] 请核对上述输出的IPv4地址 10.0.0.0/24 是否与【网络拓扑信息】中 h1 的接口 IP 一致，若不一致，调用 submit_diagnosis 提交 ip_misconfig。
+2026-03-17 12:23:12 [INFO] SystemLogger: 🤔 [Thought]: 发现了问题！h1 的 tos1_1 接口配置的 IP 地址是 10.0.0.0/24，但根据拓扑信息，h1 的接口应该是 192.168.1.2。IP 地址配置错误！
+
+拓扑信息显示：
+- h1 [host] | 接口: tos1_1(192.168.1.2) | 默认网关: 192.168.1.1
+
+但实际检查发现 h1 的 tos1_1 接口配置的是 10.0.0.0/24，这与预期的 192.168.1.2 不一致。
+
+这是典型的 IP 地址配置错误（ip_misconfig）。让我再确认一下其他主机是否有类似问题，但根据当前发现，h1 的 IP 配置明显错误。
+
+实际上，这个故障的根本原因是 h1 的 IP 地址配置错误。拓扑中 h1 应该是 192.168.1.2，但实际配置成了 10.0.0.0/24。
+
+让我提交这个诊断结果。
+2026-03-17 12:23:12 [INFO] SystemLogger: 🛠️ [Action]: Call 'submit_diagnosis' with {'root_cause': 'ip_misconfig'}
+2026-03-17 12:23:12 [INFO] SystemLogger: 👁️ [Observation from submit_diagnosis]: [DIAGNOSIS_COMPLETED]: ip_misconfig
+2026-03-17 12:23:12 [INFO] SystemLogger: 📕 [Submission]: ip_misconfig
+2026-03-17 12:23:16 [INFO] SystemLogger: 🤔 [Thought]: 诊断完成。故障的根本原因是 h1 主机的 IP 地址配置错误（ip_misconfig）。
+
+根据拓扑信息，h1 的 tos1_1 接口应该配置为 192.168.1.2，但实际检查发现其配置的是 10.0.0.0/24，这导致 h1 无法正确通信，因为：
+1. IP 地址与预期网段不匹配
+2. 路由表中也没有正确的默认网关路由
+
+这是一个典型的主机侧 IP 配置错误故障。
+2026-03-17 12:23:16 [INFO] SystemLogger: >>> Node 2: Running Objective Evaluation...
+2026-03-17 12:23:16 [INFO] SystemLogger: >>> Node 3: Running Subjective Evaluation (Judge)...
+2026-03-17 12:23:19 [INFO] SystemLogger: 📝 报告已写入: /home/lzl/tmx/PlayGround/results/static_routing环境ip_misconfig故障诊断报告.md
+2026-03-17 12:23:19 [INFO] SystemLogger: 
+📊 2026-03-17 12:23:19【评估报告】
+✅ 客观正确性: True
+预期故障: ip_misconfig | 诊断结果: ip_misconfig
+⏱️ 耗时: 37.76 秒
+🛠️ 工具调用: 4 次
+🪙 Token 消耗: {'input_tokens': 27345, 'output_tokens': 893, 'total_tokens': 28238}
+🌟 主观逻辑得分: 10 / 10
+📝 裁判点评:
+Agent 在面对初始信息缺失（主机和目标节点均为 None）的情况下，展现了极佳的排障逻辑。首先，它主动选择 h1 作为测试起点进行跨网段 ping 测试，敏锐地捕捉到 'Network is unreachable' 的异常。随后，它通过检查路由表发现了默认路由缺失的疑点，并进一步调用 check_ip_misconfig 工具核实接口配置。通过将实际获取的 IP 地址（10.0.0.0/24）与拓扑信息（192.168.1.2）进行对比，精准锁定了 ip_misconfig 这一根因。整个过程逻辑严密，工具调用无冗余，推导过程完全符合网络排障的最佳实践。
+
+2026-03-17 12:23:19 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-17 12:23:24 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-17 13:06:19 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-17 13:06:19 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-17 13:06:19 [INFO] SystemLogger: [Error] ❌ 拓扑部署失败:
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+OSError: [Errno 113] No route to host
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 500, in request
+    self.endheaders()
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1333, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1093, in _send_output
+    self.send(msg)
+  File "/home/lzl/tmx/venv/lib/python3.12/http/client.py", line 1037, in send
+    self.connect()
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host
+
+The above exception was the direct cause of the following exception:
+
+urllib3.exceptions.ProxyError: ('Unable to connect to proxy', NewConnectionError("HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host"))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/urllib3/util/retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='192.168.1.11', port=10810): Max retries exceeded with url: http://192.168.1.33:26668/re/project/static_routing/?user=tmx18 (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host")))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/lzl/tmx/PlayGround/src/net_env/static_routing.py", line 80, in <module>
+    Lab_Static = StaticRouting()
+                 ^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/src/net_env/static_routing.py", line 16, in __init__
+    super().__init__(lab_name=lab_name)
+  File "/home/lzl/tmx/PlayGround/src/net_env/base_netenv.py", line 41, in __init__
+    if self.lab.is_topo_deployed:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/KlonetAPI/klonet.py", line 99, in is_topo_deployed
+    response = self.remote_topo
+               ^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/KlonetAPI/klonet.py", line 117, in remote_topo
+    response = requests.get(url)
+               ^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lzl/tmx/PlayGround/.venv/lib/python3.12/site-packages/requests/adapters.py", line 671, in send
+    raise ProxyError(e, request=request)
+requests.exceptions.ProxyError: HTTPConnectionPool(host='192.168.1.11', port=10810): Max retries exceeded with url: http://192.168.1.33:26668/re/project/static_routing/?user=tmx18 (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPConnection(host='192.168.1.11', port=10810): Failed to establish a new connection: [Errno 113] No route to host")))
+
+2026-03-17 13:06:19 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-17 13:06:23 [ERROR] SystemLogger: 测试用例 ip_misconfig 异常: 无法连接到 Klonet 后端或项目 static_routing!
+2026-03-17 13:06:23 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 02:08:38 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 02:08:38 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 02:09:38 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 02:09:42 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 02:09:42 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 02:09:47 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-19 02:09:47 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-19 02:09:47 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-19 02:09:47 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-19 02:10:02 [INFO] SystemLogger: 🤔 [Thought]: 我需要先理解当前的故障情况。用户投诉主机 None 无法正常 Ping 通节点 None，网络完全不可达，疑似路由问题。但这里的主机和目标节点都是 None，这看起来像是信息缺失。
+
+让我先尝试从某个主机开始进行连通性测试，以了解网络的实际状态。根据拓扑信息，我有 h1-h6 这些主机。让我先尝试从 h1 ping 一个目标，看看是否能发现具体问题。
+
+首先，我需要确定故障的具体表现。让我从 h1 开始，尝试 ping 一个跨网段的目标，比如 h3（192.168.2.2），因为 h1 在 192.168.1.x 网段，h3 在 192.168.2.x 网段，需要跨路由器通信。
+2026-03-19 02:10:02 [INFO] SystemLogger: 🛠️ [Action]: Call 'ping_by_ip' with {'src_node': 'h1', 'dst_ip': '192.168.2.2'}
+2026-03-19 02:10:03 [INFO] SystemLogger: 👁️ [Observation from ping_by_ip]: connect: Network is unreachable
+2026-03-19 02:10:06 [INFO] SystemLogger: 🤔 [Thought]: 从 h1 ping 192.168.2.2 显示 "Network is unreachable"，这表明 h1 无法找到到达目标的路由。这可能是 h1 的默认路由缺失，或者中间路由器的问题。
+
+让我先检查 h1 的路由表，确认是否有默认网关配置。
+2026-03-19 02:10:06 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_default_route_missing' with {'host': 'h1'}
+2026-03-19 02:10:07 [INFO] SystemLogger: 👁️ [Observation from check_default_route_missing]: 10.0.0.0/24 dev tos1_1 proto kernel scope link src 10.0.0.0
+2026-03-19 02:10:12 [INFO] SystemLogger: 🤔 [Thought]: 发现问题了！h1 的路由表中没有默认路由（default via）。根据拓扑信息，h1 的默认网关应该是 192.168.1.1，但路由表中只显示了一个 10.0.0.0/24 的路由，没有 default via 192.168.1.1 的条目。
+
+这看起来是 h1 的默认路由缺失问题。让我再确认一下 h1 的 IP 配置是否正确，以及接口状态是否正常。
+2026-03-19 02:10:12 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_ip_misconfig' with {'host': 'h1', 'iface': 'tos1_1'}
+2026-03-19 02:10:13 [INFO] SystemLogger: 👁️ [Observation from check_ip_misconfig]: 3: tos1_1@if6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 32:3d:d5:4b:52:c6 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet 10.0.0.0/24 scope global tos1_1
+       valid_lft forever preferred_lft forever
+[专家提示] 请核对上述输出的IPv4地址 10.0.0.0/24 是否与【网络拓扑信息】中 h1 的接口 IP 一致，若不一致，调用 submit_diagnosis 提交 ip_misconfig。
+2026-03-19 02:10:23 [INFO] SystemLogger: 🤔 [Thought]: 发现了问题！h1 的 tos1_1 接口配置的 IP 地址是 10.0.0.0/24，但根据拓扑信息，h1 的接口应该是 192.168.1.2。IP 地址配置错误！
+
+拓扑信息显示：
+- h1 [host] | 接口: tos1_1(192.168.1.2) | 默认网关: 192.168.1.1
+
+但实际检查发现 h1 的 tos1_1 接口配置的是 10.0.0.0/24，这与预期的 192.168.1.2 不一致。
+
+这是典型的 IP 地址配置错误（ip_misconfig）。让我再确认一下其他主机是否有类似问题，但根据当前发现，h1 的 IP 配置明显错误。
+
+实际上，路由表中显示的是 10.0.0.0/24 dev tos1_1，这说明 h1 的接口确实配置成了 10.0.0.0/24，而不是拓扑中应有的 192.168.1.2。
+
+这是一个主机侧的 IP 配置错误问题。根本原因是 **ip_misconfig**。
+2026-03-19 02:10:23 [INFO] SystemLogger: 🛠️ [Action]: Call 'submit_diagnosis' with {'root_cause': 'ip_misconfig'}
+2026-03-19 02:10:23 [INFO] SystemLogger: 👁️ [Observation from submit_diagnosis]: [DIAGNOSIS_COMPLETED]: ip_misconfig
+2026-03-19 02:10:23 [INFO] SystemLogger: 📕 [Submission]: ip_misconfig
+2026-03-19 02:10:27 [INFO] SystemLogger: 🤔 [Thought]: 诊断完成。故障原因是 h1 主机的 IP 地址配置错误（ip_misconfig）。
+
+根据检查结果：
+- 拓扑信息显示 h1 的 tos1_1 接口应该配置为 192.168.1.2
+- 但实际检查发现 h1 的 tos1_1 接口配置的是 10.0.0.0/24
+
+这导致 h1 无法正确通信，因为 IP 地址与网络拓扑不匹配，进而导致路由问题。
+2026-03-19 02:10:27 [INFO] SystemLogger: >>> Node 2: Running Objective Evaluation...
+2026-03-19 02:10:27 [INFO] SystemLogger: >>> Node 3: Running Subjective Evaluation (Judge)...
+2026-03-19 02:10:37 [INFO] SystemLogger: 📝 报告已写入: /home/lzl/tmx/PlayGround/results/static_routing环境ip_misconfig故障诊断报告.md
+2026-03-19 02:10:37 [INFO] SystemLogger: 
+📊 2026-03-19 02:10:37【评估报告】
+✅ 客观正确性: True
+预期故障: ip_misconfig | 诊断结果: ip_misconfig
+⏱️ 耗时: 39.28 秒
+🛠️ 工具调用: 4 次
+🪙 Token 消耗: {'input_tokens': 27370, 'output_tokens': 908, 'total_tokens': 28278}
+🌟 主观逻辑得分: 9 / 10
+📝 裁判点评:
+该 Agent 展现了非常优秀的排障逻辑和敏锐的观察力。
+
+1. **逻辑清晰且高效**：面对模糊的故障描述（主机和目标均为 None），Agent 没有盲目猜测，而是主动选取典型节点（h1）进行跨网段连通性测试，迅速复现了'Network is unreachable'现象，锁定了排查方向。
+2. **工具调用精准**：从 Ping 测试到检查默认路由，再到检查 IP 配置，每一步工具调用都紧扣上一步的观察结果，层层递进，没有冗余操作。
+3. **根因定位准确**：Agent 敏锐地捕捉到了 `check_default_route_missing` 返回的异常路由条目（10.0.0.0/24），并进一步通过 `check_ip_misconfig` 确认了接口实际 IP（10.0.0.0）与拓扑预期 IP（192.168.1.2）严重不符。它正确地将“路由缺失”这一表象归因为底层的
+
+2026-03-19 02:10:37 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 02:10:42 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-19 03:04:27 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:04:27 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:05:34 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:05:38 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:05:38 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:05:40 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-19 03:05:40 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-19 03:05:40 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-19 03:05:40 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-19 03:05:56 [INFO] SystemLogger: 🤔 [Thought]: 我需要先理解当前的故障情况。用户投诉主机 None 无法正常 Ping 通节点 None，网络完全不可达，疑似路由问题。但这里的主机和目标节点都是 None，这看起来像是信息缺失。
+
+让我先尝试从某个主机开始进行连通性测试，以了解网络的实际状态。根据拓扑信息，我有 h1-h6 这些主机。让我先尝试从 h1 ping 一个目标，看看是否能发现具体问题。
+
+首先，我需要确定故障的具体表现。让我尝试从 h1 ping 一个跨网段的目标，比如 h3（192.168.2.2），因为 h1 在 192.168.1.x 网段，h3 在 192.168.2.x 网段，需要跨路由器通信。
+2026-03-19 03:05:56 [INFO] SystemLogger: 🛠️ [Action]: Call 'ping_by_ip' with {'src_node': 'h1', 'dst_ip': '192.168.2.2'}
+2026-03-19 03:05:56 [INFO] SystemLogger: 👁️ [Observation from ping_by_ip]: connect: Network is unreachable
+2026-03-19 03:06:01 [INFO] SystemLogger: 🤔 [Thought]: 从 h1 ping 192.168.2.2 显示 "Network is unreachable"，这表明 h1 无法找到到达目标的路由。这可能是 h1 的默认路由缺失，或者是路由器上的路由问题。
+
+让我先检查 h1 的路由表，确认是否有默认网关配置。
+2026-03-19 03:06:01 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_default_route_missing' with {'host': 'h1'}
+2026-03-19 03:06:02 [INFO] SystemLogger: 👁️ [Observation from check_default_route_missing]: 10.0.0.0/24 dev tos1_1 proto kernel scope link src 10.0.0.0
+2026-03-19 03:06:02 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 03:06:07 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-19 03:09:33 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:09:33 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:10:40 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:10:44 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:10:44 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:10:46 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-19 03:10:46 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-19 03:10:47 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-19 03:10:47 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-19 03:10:56 [INFO] SystemLogger: 🤔 [Thought]: 我需要先理解当前的故障情况。用户投诉说"主机 None 无法正常 Ping 通节点 None"，这个描述比较模糊，没有指定具体的源主机和目标节点。
+
+让我先尝试从某个主机开始进行连通性测试，看看网络的整体状态。根据拓扑信息，我有 h1-h6 这些主机，以及 r1, r2 路由器。
+
+首先，我应该选择一个源主机和一个目标IP来进行Ping测试，以确定故障的具体表现。让我从 h1 开始，尝试 ping 一个跨网段的目标，比如 h4 (192.168.3.2)。
+2026-03-19 03:10:56 [INFO] SystemLogger: 🛠️ [Action]: Call 'ping_by_ip' with {'src_node': 'h1', 'dst_ip': '192.168.3.2'}
+2026-03-19 03:10:57 [INFO] SystemLogger: 👁️ [Observation from ping_by_ip]: connect: Network is unreachable
+2026-03-19 03:11:01 [INFO] SystemLogger: 🤔 [Thought]: Ping 结果显示 "Network is unreachable"，这表明 h1 无法找到到达目标 IP 的路由。这可能是由于：
+1. h1 自身缺少默认路由
+2. 中间路由器缺少去往目标网段的路由
+3. 物理链路故障
+
+让我先检查 h1 的路由表，确认是否有默认网关配置。
+2026-03-19 03:11:01 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_default_route_missing' with {'host': 'h1'}
+2026-03-19 03:11:02 [INFO] SystemLogger: 👁️ [Observation from check_default_route_missing]: 10.0.0.0/24 dev tos1_1 proto kernel scope link src 10.0.0.0
+2026-03-19 03:11:08 [INFO] SystemLogger: 🤔 [Thought]: 发现问题了！h1 的路由表中没有默认路由（default via）。根据拓扑信息，h1 的默认网关应该是 192.168.1.1，但路由表中只显示了一个 10.0.0.0/24 的路由，没有 default via 条目。
+
+这看起来像是 h1 的 IP 配置也有问题，因为路由表显示的是 10.0.0.0/24，但拓扑信息显示 h1 的接口应该是 192.168.1.2。让我检查 h1 的 IP 配置。
+2026-03-19 03:11:08 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_ip_misconfig' with {'host': 'h1', 'iface': 'tos1_1'}
+2026-03-19 03:11:09 [INFO] SystemLogger: 👁️ [Observation from check_ip_misconfig]: 3: tos1_1@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether be:b2:e6:72:eb:24 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet 10.0.0.0/24 scope global tos1_1
+       valid_lft forever preferred_lft forever
+[专家提示] 请核对上述输出的IPv4地址 10.0.0.0/24 是否与【网络拓扑信息】中 h1 的接口 IP 一致，若不一致，调用 submit_diagnosis 提交 ip_misconfig。
+2026-03-19 03:11:15 [INFO] SystemLogger: 🤔 [Thought]: 确认了！h1 的接口 tos1_1 配置的 IP 地址是 10.0.0.0/24，但根据拓扑信息，h1 的正确 IP 应该是 192.168.1.2。这是一个明显的 IP 配置错误（ip_misconfig）。
+
+同时，路由表中也缺少默认路由，这可能是因为 IP 配置错误导致的连锁反应。
+
+让我再确认一下 h1 的接口状态是否正常，以及是否有其他问题。
+2026-03-19 03:11:15 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_interface_down' with {'host': 'h1', 'iface': 'tos1_1'}
+2026-03-19 03:11:16 [INFO] SystemLogger: 👁️ [Observation from check_interface_down]: 3: tos1_1@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether be:b2:e6:72:eb:24 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+[专家提示] 未发现异常！接口状态良好
+2026-03-19 03:11:21 [INFO] SystemLogger: 🤔 [Thought]: 接口状态是正常的（UP）。问题明确是 IP 地址配置错误：h1 的接口 tos1_1 应该配置为 192.168.1.2，但实际配置成了 10.0.0.0/24。
+
+这属于主机侧故障中的 `ip_misconfig`（IP 地址配置错误）。
+
+让我再检查一下是否有其他可能的问题，比如 ARP 问题等，但根据目前的发现，IP 配置错误是最根本的原因。
+2026-03-19 03:11:21 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_arp_poisoning' with {'host': 'h1'}
+2026-03-19 03:11:22 [INFO] SystemLogger: 👁️ [Observation from check_arp_poisoning]: [WARN] h1 命令 'ip neigh show' 无输出。
+2026-03-19 03:11:27 [INFO] SystemLogger: 🤔 [Thought]: ARP 缓存表没有输出，这可能是因为 IP 配置错误导致无法正常进行 ARP 通信。
+
+综合以上分析：
+1. h1 的接口 tos1_1 配置的 IP 地址是 10.0.0.0/24，而正确的应该是 192.168.1.2
+2. 由于 IP 配置错误，h1 的路由表也不正确，缺少默认路由
+3. 这导致 h1 无法与任何其他节点通信
+
+根本原因是 **ip_misconfig**（主机 IP 地址配置错误）。
+2026-03-19 03:11:27 [INFO] SystemLogger: 🛠️ [Action]: Call 'submit_diagnosis' with {'root_cause': 'ip_misconfig'}
+2026-03-19 03:11:27 [INFO] SystemLogger: 👁️ [Observation from submit_diagnosis]: [DIAGNOSIS_COMPLETED]: ip_misconfig
+2026-03-19 03:11:27 [INFO] SystemLogger: 📕 [Submission]: ip_misconfig
+2026-03-19 03:11:30 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 03:11:35 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-19 03:12:42 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:12:42 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:13:44 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:13:48 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:13:48 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:13:51 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-19 03:13:51 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-19 03:13:51 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-19 03:13:51 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-19 03:14:01 [INFO] SystemLogger: 🤔 [Thought]: 我需要先理解当前的故障情况。用户投诉主机 None 无法正常 Ping 通节点 None，网络完全不可达，疑似路由问题。但这里的主机和目标节点都是 None，这看起来像是信息缺失。
+
+让我先尝试从某个主机开始进行连通性测试，以了解网络的实际状态。根据拓扑信息，我有 h1-h6 这些主机。让我先尝试从 h1 ping 一个目标，看看是否能发现具体问题。
+
+首先，我需要确定故障的具体表现。让我从 h1 开始，尝试 ping 一个跨网段的目标，比如 h3（192.168.2.2），因为 h1 在 192.168.1.x 网段，h3 在 192.168.2.x 网段，需要跨路由器通信。
+2026-03-19 03:14:01 [INFO] SystemLogger: 🛠️ [Action]: Call 'ping_by_ip' with {'src_node': 'h1', 'dst_ip': '192.168.2.2'}
+2026-03-19 03:14:02 [INFO] SystemLogger: 👁️ [Observation from ping_by_ip]: connect: Network is unreachable
+2026-03-19 03:14:04 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 03:14:10 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-19 03:15:00 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:15:00 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:15:59 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:18:16 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:18:16 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:18:19 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-19 03:18:19 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-19 03:18:20 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-19 03:18:20 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-19 03:18:27 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 03:18:32 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-19 03:18:57 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:18:57 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:19:57 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:23:23 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:23:31 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:24:20 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:24:20 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:25:29 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:26:22 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:26:23 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:27:22 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:27:22 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:28:31 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:29:14 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:29:19 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:30:54 [INFO] SystemLogger: 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 03:30:54 [INFO] SystemLogger: [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...
+2026-03-19 03:32:02 [INFO] SystemLogger: [System] ✅ 部署完成！缓冲 4 秒等待路由收敛...
+2026-03-19 03:32:07 [INFO] SystemLogger: Injecting fault: ip_misconfig ...
+2026-03-19 03:32:07 [INFO] SystemLogger: 正在注入故障: 修改 h1:tos1_1 IP 为 10.0.0.0/24
+2026-03-19 03:32:09 [INFO] SystemLogger: [System] 🧠 启动 Agent 诊断与评估流程...
+2026-03-19 03:32:09 [INFO] SystemLogger: >>> Node 1: Running Diagnosis Agent...
+2026-03-19 03:32:09 [INFO] SystemLogger: Agent starting diagnosis task... (Max Steps: 50)
+2026-03-19 03:32:09 [INFO] SystemLogger: Loading tools from all MCP Servers... (Please wait)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-03-19 03:32:20 [INFO] SystemLogger: 🤔 [Thought]: 我需要诊断 h1 无法 Ping 通 192.168.4.2 的故障。让我先进行初步的连通性测试。
+
+首先，从 h1 向目标 IP 192.168.4.2 发送 Ping 测试，确认故障现象。
+2026-03-19 03:32:20 [INFO] SystemLogger: 🛠️ [Action]: Call 'ping_by_ip' with {'src_node': 'h1', 'dst_ip': '192.168.4.2'}
+2026-03-19 03:32:21 [INFO] SystemLogger: 👁️ [Observation from ping_by_ip]: connect: Network is unreachable
+2026-03-19 03:32:26 [INFO] SystemLogger: 🤔 [Thought]: Ping 结果显示 "Network is unreachable"，这表明 h1 无法找到到达目标的路由。让我先检查 h1 的基本配置状态。
+
+首先检查 h1 的接口状态和 IP 配置：
+2026-03-19 03:32:26 [INFO] SystemLogger: 🛠️ [Action]: Call 'check_interface_down' with {'host': 'h1', 'iface': 'tos1_1'}
+2026-03-19 03:32:27 [INFO] SystemLogger: 👁️ [Observation from check_interface_down]: 3: tos1_1@if6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 32:db:3d:2e:bc:be brd ff:ff:ff:ff:ff:ff link-netnsid 1
+[专家提示] 未发现异常！接口状态良好
+2026-03-19 03:32:29 [INFO] SystemLogger: [System] 🧹 正在销毁网络拓扑 (static_routing)...
+2026-03-19 03:32:34 [INFO] SystemLogger: [System] ✅ 拓扑销毁成功。
+2026-03-19 05:18:03,530 [INFO] 
+🚀 【测试】环境: [static_routing] -> 故障: [ip_misconfig]
+2026-03-19 05:18:03,531 [INFO] [System] 🛠️  正在部署网络拓扑 (static_routing via static_routing.py)...

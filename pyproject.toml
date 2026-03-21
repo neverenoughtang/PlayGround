@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "playground"
+version = "0.1.0"
+description = "网络故障检测智能体及动态测评平台"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "python-dotenv",
+    "langgraph",
+    "langchain",
+    "langchain-openai",
+    "requests",
+    "mcp",
+    "flask",
+    "flask_socketio"
+]
+
+[tool.setuptools]
+include-package-data = true
+# 1. 核心修复：将默认的根包路径映射到 src，同时特殊声明保留根目录的 KlonetAPI
+package-dir = {"" = "src", "KlonetAPI" = "KlonetAPI"}
+# 2. 核心修复：显式声明暴露独立的单文件模块，否则 setuptools 会忽略它
+py-modules = ["orchestrator"]
+
+[tool.setuptools.packages.find]
+where = [".", "src"]
+include = [
+    "KlonetAPI*", 
+    "agent*",  
+    "fault_injector*", 
+    "net_env*", 
+    "service*", 
+    "utils*"
+]
+# 3. 核心修复：允许打包没有 __init__.py 的文件夹（命名空间包），解决 utils 找不到的问题
+namespaces = true
