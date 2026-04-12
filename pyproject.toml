@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Nika"
+version = "0.1.0"
+description = "网络故障检测智能体及测评平台"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "python-dotenv",
+    "langgraph",
+    "langchain",
+    "langchain-openai",
+    "requests",
+    "mcp",
+    "flask",
+    "flask_socketio",
+    "langchain-mcp-adapters",
+    "langchain-community",
+    "rank-bm25",
+    "langchain-milvus",
+    "langchain-huggingface",
+    "langchain-text-splitters",
+    "sentence-transformers",
+    "pymilvus",
+    "milvus-lite",
+    "setuptools<70.0.0",
+    "torch"
+]
+
+[tool.setuptools]
+include-package-data = true
+package-dir = {"" = "src", "KlonetAPI" = "KlonetAPI"}
+py-modules = ["orchestrator"]
+
+[tool.setuptools.packages.find]
+where = [".", "src"]
+include = [
+    "KlonetAPI*", 
+    "agent*",  
+    "net_env*", 
+    "mcp_server*", 
+    "utils*"
+]
+namespaces = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
