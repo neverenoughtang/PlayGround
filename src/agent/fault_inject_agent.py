@@ -53,12 +53,19 @@ def submit_inject(result: str, fault_description: str, expected_fault: str, expe
 # ==========================================
 # 3. 智能体节点 (Nodes)
 # ==========================================
+# 👇 【新增】在类外部定义一个全局变量，作为 RAG 模型的缓存
+_GLOBAL_INJECT_RAG_CACHE = None
+
 class FaultRetrievalAgent:
     """
     故障注入 RAG 智能体
     """
     def __init__(self):
-        self.rag_agent = FaultKnowledgeBase(force_rebuild=False) 
+        global _GLOBAL_INJECT_RAG_CACHE # 全局缓存
+        if _GLOBAL_INJECT_RAG_CACHE == None: # 如果没有缓存, 新建一个
+            _GLOBAL_INJECT_RAG_CACHE = FaultKnowledgeBase(force_rebuild=False) 
+
+        self.rag_agent = _GLOBAL_INJECT_RAG_CACHE # 如果有, 直接复用
 
     async def get_reference(self, query) -> Dict[str, Any]:
         inject_doc = self.rag_agent.search(query)
@@ -194,7 +201,7 @@ class FaultInjectAgent:
             await asyncio.wait_for(_process_stream(), timeout=timeout)
 
         except asyncio.TimeoutError:
-            print(f"⚠️ [Agent 中断]: 诊断流程执行超时 ({timeout} 秒)！")
+            print(f"⚠️ [Agent 中断]: 流程执行超时 ({timeout} 秒)！")
         except GraphRecursionError:
             print(f"⚠️ [Error]: Reached max steps limit.")
         except Exception as e:

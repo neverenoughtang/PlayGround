@@ -21,6 +21,13 @@ os.environ["HF_HUB_VERBOSITY"] = "error"
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+# 【新增核心】配置虚拟 Token，欺骗鉴权机制，消除未授权警告
+os.environ["HF_TOKEN"] = "hf_dummy_token_to_suppress_warning"
+
+# 【新增核心】强制屏蔽 huggingface_hub 的底层 Python logging 警告
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore") # 屏蔽所有 Python 的 Warning 输出
+
 # 【模型存放目录】
 MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "rag_models"))
 DOC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "docs"))
@@ -194,7 +201,7 @@ class FaultKnowledgeBase:
                 print(f"[RAG] 收到强制重建指令，正在摧毁旧集合 '{self.collection_name}'...")
                 
                 # # 👇👇👇 【重点提示】这是由于表结构变更，DROP 旧页表结构的代码行！👇👇👇
-                # self.client.drop_collection(collection_name=self.collection_name)
+                self.client.drop_collection(collection_name=self.collection_name)
                 # # 👆👆👆 如果你想测试主函数，确保 force_rebuild=True 就能顺利走到这里 👆👆👆
                 
             else:
@@ -372,7 +379,7 @@ if __name__ == "__main__":
     print("============== 最终发给 Agent 的内容 ==============")
     print(result_text)
 
-    query = "通信延迟似乎很高"
+    query = "通信很不稳定！"
     print(f"\n[测试 Query]: {query}")
     print("正在执行领域词加强混合检索 + 交叉重排，请稍候...\n")
     result_text = kb.search(query)

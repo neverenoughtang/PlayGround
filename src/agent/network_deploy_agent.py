@@ -32,10 +32,10 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
     仅保留节点(名称/类型/接口/IP/网关)和链路(源/目的及对应IP)。
     """
     simplified = []
-    simplified.append(f"\n {lab_name} 的拓扑信息:")
+    simplified.append(f"{lab_name} 的拓扑信息:")
     
     # 1. 提炼节点信息
-    simplified.append("\n[节点列表]")
+    simplified.append("[节点列表]")
     categories = ['controllers', 'hosts', 'routers', 'switches', 'dpdks']
     for category in categories:
         if category not in raw_topo or not raw_topo[category]:
@@ -44,6 +44,17 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
         for node_name, node_info in raw_topo[category].items():
             # 基础网络属性
             node_type = node_info.get('type', category)
+            
+            # 👇 【新增修复】：智能推断节点真实类型 (覆盖分类不准的情况)
+            image_name = node_info.get('image_name', '').lower()
+            subtype = node_info.get('subtype', '').lower()
+            
+            if 'ryu' in image_name or 'ryu' in subtype:
+                node_type = 'ryu'
+            elif 'bmv2' in image_name or 'bmv2' in subtype or 'p4' in image_name:
+                node_type = 'bmv2'
+            # 👆 =======================================================
+            
             gateway = node_info.get('gateway', '')
             interfaces = node_info.get('interfaces', [])
             
@@ -52,8 +63,16 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
             for iface in interfaces:
                 ip = iface.get('ip', '')
                 raw_iname = iface.get('name', 'ethX')
-                netmask = iface.get('netmask', '/24') 
-                mask = f"/{sum(bin(int(x)).count('1') for x in netmask.split('.'))}" # 掩码
+
+                # 修复：安全解析子网掩码，防止空字符串或非法格式导致 int() 报错
+                netmask = iface.get('netmask', '') 
+                mask = ""
+                if netmask and '.' in netmask:
+                    try:
+                        mask_len = sum(bin(int(x)).count('1') for x in netmask.split('.'))
+                        mask = f"/{mask_len}"
+                    except ValueError:
+                        mask = "" # 如果解析失败，就不带掩码后缀
 
                 # 修正接口名称：如果接口名以节点名开头 (如 h1s1_1)，则去掉节点名，加上 'to'
                 if raw_iname.startswith(node_name):
@@ -61,12 +80,14 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
                 else:
                     actual_iname = raw_iname
 
+                # 加上 IP
                 if ip:
                     iface_strs.append(f"{actual_iname}({ip}{mask})")
                 else:
                     iface_strs.append(f"{actual_iname}")
             
             # 拼接单节点信息
+            # 这里的 [node_type] 就会根据上面的智能推断显示出 [ryu] 或 [bmv2]
             info_str = f"- {node_name} [{node_type}]"
             if iface_strs:
                 info_str += f" | 接口: {', '.join(iface_strs)}"
@@ -75,7 +96,7 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
                 
             simplified.append(info_str)
             
-    # 2. 提炼链路信息
+    # 2. 提炼链路信息 (原代码保持不变)
     simplified.append("\n[链路]")
     links = raw_topo.get('links', {})
     for link_name, link_info in links.items():
@@ -144,12 +165,12 @@ class DeployAgent:
         chain = prompt_template | self.structured_llm
         
         try:
-            print("[DeployAgent] 🧠 正在思考应该分配哪个网络拓扑...")
+            print("[Deploy Agent] 🧠 正在思考应该分配哪个网络拓扑...")
             result: TopologySelection = await chain.ainvoke({"user_query": user_query})
-            print(f"[DeployAgent] 🎯 决策完成: 选择了 '{result.lab_name}'。\n理由: {result.reasoning}")
+            print(f"[Deploy Agent] 🎯 决策完成: 选择了 '{result.lab_name}'。\n理由: {result.reasoning}")
             return {"lab_name": result.lab_name, "reasoning": result.reasoning}
         except Exception as e:
-            print(f"[DeployAgent] ❌ LLM 决策失败: {e}")
+            print(f"[Deploy Agent] ❌ LLM 决策失败: {e}")
             # 兜底容错，默认返回基础的静态路由
             return {"lab_name": "static_routing", "reasoning": "LLM 解析异常，使用默认兜底拓扑。"}
 
@@ -198,6 +219,8 @@ async def execute_deploy_node(state: DeployState):
         # 将数十 KB 的无用 JSON 数据精简为几十行 LLM 友好的纯文本
         netenv_info = simplify_topo(lab_name, raw_topo_dict)
         
+        print(f"--- 拓扑结构如下 --- \n{netenv_info}")
+
         return {
             "deploy_status": "Successful",
             "netenv_info": netenv_info
@@ -240,9 +263,9 @@ if __name__ == "__main__":
         # 1. 初始化编译图
         graph = build_deploy_graph()
         
-        # 2. 模拟外部输入 (假设后续 Agent 想要一个基于 OSPF 的网络)
+        # 2. 模拟外部输入 
         initial_state = {
-            "user_query": "我们需要一个结构稍微复杂一点的企业级网络，最好能跑 OSPF 协议，以此来验证邻居异常的故障。",
+            "user_query": "我需要一个p4网络",
             "deploy_model": "qwen3.5-27b",
             "lab_name": "",
             "deploy_status": "",

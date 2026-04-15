@@ -23,6 +23,13 @@ os.environ["HF_HUB_VERBOSITY"] = "error"
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+# 【新增核心】配置虚拟 Token，欺骗鉴权机制，消除未授权警告
+os.environ["HF_TOKEN"] = "hf_dummy_token_to_suppress_warning"
+
+# 【新增核心】强制屏蔽 huggingface_hub 的底层 Python logging 警告
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore") # 屏蔽所有 Python 的 Warning 输出
+
 # 【模型存放目录】
 MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "rag_models"))
 DOC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "docs"))

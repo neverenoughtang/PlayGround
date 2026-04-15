@@ -6,77 +6,6 @@ from typing import Dict, List, Optional
 from KlonetAPI import Klonet
 
 
-# 简化拓扑函数
-def simplify_topo(lab_name: str, raw_topo: dict) -> str:
-    """
-    接收全量的拓扑 JSON 字典，过滤掉所有非网络特性的冗余参数，
-    仅保留节点(名称/类型/接口/IP/网关)和链路(源/目的及对应IP)。
-    """
-    simplified = []
-    simplified.append(f"\n {lab_name} 的拓扑信息:")
-    
-    # 1. 提炼节点信息
-    simplified.append("\n[节点列表]")
-    categories = ['controllers', 'hosts', 'routers', 'switches', 'dpdks']
-    for category in categories:
-        if category not in raw_topo or not raw_topo[category]:
-            continue
-            
-        for node_name, node_info in raw_topo[category].items():
-            # 基础网络属性
-            node_type = node_info.get('type', category)
-            gateway = node_info.get('gateway', '')
-            interfaces = node_info.get('interfaces', [])
-            
-            # 格式化接口
-            iface_strs = []
-            for iface in interfaces:
-                ip = iface.get('ip', '')
-                raw_iname = iface.get('name', 'ethX')
-                netmask = iface.get('netmask', '/24') 
-                mask = f"/{sum(bin(int(x)).count('1') for x in netmask.split('.'))}" # 掩码
-
-                # 修正接口名称：如果接口名以节点名开头 (如 h1s1_1)，则去掉节点名，加上 'to'
-                if raw_iname.startswith(node_name):
-                    actual_iname = "to" + raw_iname[len(node_name):]
-                else:
-                    actual_iname = raw_iname
-
-                if ip:
-                    iface_strs.append(f"{actual_iname}({ip}{mask})")
-                else:
-                    iface_strs.append(f"{actual_iname}")
-            
-            # 拼接单节点信息
-            info_str = f"- {node_name} [{node_type}]"
-            if iface_strs:
-                info_str += f" | 接口: {', '.join(iface_strs)}"
-            if gateway:
-                info_str += f" | 默认网关: {gateway}"
-                
-            simplified.append(info_str)
-            
-    # 2. 提炼链路信息
-    simplified.append("\n[链路]")
-    links = raw_topo.get('links', {})
-    for link_name, link_info in links.items():
-        src = link_info.get('source', '')
-        src_ip = link_info.get('sourceIP', '')
-        tgt = link_info.get('target', '')
-        tgt_ip = link_info.get('targetIP', '')
-        
-        # 移除掩码后缀(如 /24)，保持视觉清爽
-        src_ip_clean = src_ip.split('/')[0] if src_ip else ""
-        tgt_ip_clean = tgt_ip.split('/')[0] if tgt_ip else ""
-        
-        src_str = f"{src}({src_ip_clean})" if src_ip_clean else src
-        tgt_str = f"{tgt}({tgt_ip_clean})" if tgt_ip_clean else tgt
-        
-        simplified.append(f"- 链路 {link_name}: {src_str} <---> {tgt_str}")
-        
-    return "\n".join(simplified)
-
-
 class KlonetBaseAPI:
     """
     深度优化版 Base API
@@ -167,9 +96,35 @@ class KlonetBaseAPI:
         
         return self.lab.get_all_bmv2()
 
-    def get_all_routers(self) -> List[str]:
+    def get_all_bmv2(self) -> List[str]:
+        """
+        获取拓扑中所有的 bmv2/p4 交换机节点名称
+        """
+        topo_data = self.get_topo_json()
+        if "project" in topo_data and "topo" in topo_data["project"]:
+            topo = topo_data["project"]["topo"]
+        else:
+            topo = topo_data
+
+        bmv2_switches = []
         
-        return self.lab.get_all_routers()
+        # 1. 检查专门的 switches 分类
+        for name, info in topo.get("switches", {}).items():
+            subtype = info.get("subtype", "").lower()
+            image_name = info.get("image_name", "").lower()
+            if "bmv2" in subtype or "bmv2" in image_name or "p4" in image_name:
+                if name not in bmv2_switches:
+                    bmv2_switches.append(name)
+                    
+        # 2. 有些平台可能把 bmv2 算作特殊的 host，也需要扫一遍
+        for name, info in topo.get("hosts", {}).items():
+            subtype = info.get("subtype", "").lower()
+            image_name = info.get("image_name", "").lower()
+            if "bmv2" in subtype or "bmv2" in image_name or "p4" in image_name:
+                if name not in bmv2_switches:
+                    bmv2_switches.append(name)
+                    
+        return bmv2_switches
 
     def get_host_ip(self, host_name: str) -> Optional[str]:
         """

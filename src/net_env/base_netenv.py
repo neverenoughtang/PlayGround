@@ -69,38 +69,6 @@ class NetworkEnvBase:
         except Exception as e:
             print(f"❌ 请求 {senario} 自动配置API时发生异常: {e}")
 
-    # def auto_configure(self):
-    #     """
-    #     [核心API] 全局自动配置IP和路由，默认是 OSPF 协议
-    #     """
-
-    #     try:
-    #         # 发送 PUT 请求触发自动配置
-    #         url = (
-    #         "http://" + self.host_ip + ":" + self.port
-    #         + "/topo/autoconfiguration/?user=" + self.user_name 
-    #         + "&project_name=" + self.lab_name
-    #         )
-    #         payload = ""
-    #         headers = {
-    #             "User-Agent": "muti-agent",
-    #             "Content-Type": "application/json",
-    #             "Accept": "*/*",
-    #             "Host": self.host_ip + ":" + self.port,
-    #             "Connection": "keep-alive",
-    #         }
-    #         response = requests.request("PUT", url=url, headers=headers, data=payload)
-
-    #         if response.status_code == 200:
-    #             print("✅ 全局自动配置成功！")
-    #             print(f"响应内容: {response.text}")
-    #         else:
-    #             print(f"❌ 自动配置失败，状态码: {response.status_code}")
-    #             print(f"错误信息: {response.text}")
-    #     except Exception as e:
-    #         print(f"❌ 请求自动配置API时发生异常: {e}")
-
-
     def undeploy(self):
         """销毁拓扑"""
         print(f"正在销毁拓扑: {self.lab_name} ...")

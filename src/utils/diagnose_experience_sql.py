@@ -314,62 +314,23 @@ if __name__ == "__main__":
         # 注意：__init__ 未定义 backend_model，这里去掉无效参数
         DB = DiagnoseExperienceBase()
         
-        # 0. 考虑到反复测试，先清空一下表确保环境干净
-        await DB.clear_all_cases()
-        print("="*40)
-
-        # 1. 插入 4 条测试 Case
-        # Case 1 (将被查询到)
-        await DB.insert_case(
-            lab_name="ospf_enterprise",
-            fuzzy_complaint="业务网段B突然断网，无法PING通",
-            root_cause="ospf_passive_interface",
-            key_actions="[Thought]: 查OSPF状态。\n[Action]: node_execute(r1, 'show ip ospf interface')\n[Observation]: 接口被配置为被动接口。"
-        )
-        # Case 2 (不同 root_cause，相同的模糊症状，将被查询到)
-        await DB.insert_case(
-            lab_name="ospf_enterprise",
-            fuzzy_complaint="节点 h1 根本无法联通网络，业务断网",
-            root_cause="ospf_neighbor_misconfig",
-            key_actions="[Thought]: 查邻居状态。\n[Action]: node_execute(r1, 'show ip ospf neighbor')\n[Observation]: Hello间隔不匹配。"
-        )
-        # Case 3 (相同的 root_cause，测试去重逻辑，查询时这条不会独立出现)
-        await DB.insert_case(
-            lab_name="ospf_enterprise",
-            fuzzy_complaint="我的主机跨网段全部丢包",
-            root_cause="ospf_neighbor_misconfig",
-            key_actions="[Thought]: 直接看日志。\n[Observation]: 提示 OSPF 状态机的 Dead timer expired。"
-        )
-        # Case 4 (不同的 lab_name，精准过滤时不会被查出)
-        await DB.insert_case(
-            lab_name="bgp_datacenter",
-            fuzzy_complaint="BGP中断，彻底断网",
-            root_cause="bgp_as_mismatch",
-            key_actions="[Thought]: 查BGP邻居。\n[Observation]: AS号配置错误。"
-        )
-        print("="*40)
-
-        # 2. 打印全部case
+        # 1. 打印全部case
         await DB.print_all_cases()
 
-        # 3. 查询 1 次 Case
-        # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
-        query_result = await DB.search(
-            lab_name="ospf_enterprise", 
-            keyword="断网", 
-            limit=10
-        )
-        print("\n👇 返回给 Agent 的 System Prompt 补充内容：\n")
-        print(query_result)
-        print("="*40)
+        # # 2. 查询 1 次 Case
+        # # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
+        # query_result = await DB.search(
+        #     lab_name="ospf_enterprise", 
+        #     keyword="断网", 
+        #     limit=10
+        # )
+        # print("\n👇 返回给 Agent 的 System Prompt 补充内容：\n")
+        # print(query_result)
+        # print("="*40)
 
-        # 4. 删除一条 Case (假设删除刚刚写入的第一条数据 ID=1)
-        await DB.delete_case_by_id(case_id=1)
-        print("="*40)
-
-        # 5. 清空
-        # 测试结束后，恢复数据库原状 (可选)
-        await DB.clear_all_cases()
+        # # 3. 清空
+        # # 测试结束后，恢复数据库原状 (可选)
+        # await DB.clear_all_cases()
 
     # 运行异步测试主函数
     asyncio.run(test())

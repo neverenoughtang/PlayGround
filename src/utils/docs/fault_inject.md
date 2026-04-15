@@ -59,7 +59,7 @@
 ---
 
 # **IP 配置错误 (IP Misconfig)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：ip_misconfig
    - 注入方式：
@@ -75,7 +75,7 @@
    - 故障表现描述：用户反馈某主机无法与同网段或其他节点正常通信，IP 可能丢失或配错。
 
 # **默认路由缺失 (Default Route Missing)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：default_route_missing
    - 注入方式：
@@ -88,7 +88,7 @@
    - 故障表现描述：用户反馈某主机同网段通信正常，但跨网段通信完全不可达。
 
 # **ARP 缓存投毒 (ARP Poisoning)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：arp_poisoning
    - 注入方式：
@@ -101,7 +101,7 @@
    - 故障表现描述：用户反馈某主机局域网内无法与特定目标通信。
 
 # **接口宕机 (Interface Down)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：interface_down
    - 注入方式：
@@ -114,7 +114,7 @@
    - 故障表现描述：用户反馈某主机似乎彻底脱网。
 
 # **DNS 配置错误 (DNS Error)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：dns_error
    - 注入方式：
@@ -127,7 +127,7 @@
    - 故障表现描述：用户反馈某主机无法访问外部域名网站。
 
 # **CPU 资源满载 (CPU Overload)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：cpu_overload
    - 注入方式：
@@ -140,7 +140,7 @@
    - 故障表现描述：用户反馈某主机系统严重卡顿，业务处理缓慢。
 
 # **主机静态路由错误 (Routing Error)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：routing_error
    - 注入方式：
@@ -153,7 +153,7 @@
    - 故障表现描述：用户反馈主机无法访问特定的某个外部网段，数据包走向异常。
 
 # **子网掩码错误 (Mask Error)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：mask_error
    - 注入方式：
@@ -168,7 +168,7 @@
    - 故障表现描述：用户反馈同网段内的部分相邻主机无法直接通信。
 
 # **主机端口耗尽 (Host Port Exhaustion)**
-   - 适用场景：static_routing
+   - 适用场景：static_routing 等任意场景
    - 故障类型：主机层故障 (Host Level)
    - 期待故障：host_port_exhaustion
    - 注入方式：

@@ -79,7 +79,7 @@ async def main():
                 "netenv_info": netenv_info,
                 "fault_query": fault_query,
                 "actor_model": "qwen3.5-27b",
-                "max_steps": 15
+                "max_steps": 100
             })
             
             problem_info = inject_state["problem_info"]
@@ -114,7 +114,7 @@ async def main():
                 expected_location=expected_location,
                 backend_model=diag_model,
                 max_steps=int(max_steps_input),
-                time_limit=1200.0
+                time_limit=1800.0
             )
 
             # HIL: 抉择下一步
@@ -145,7 +145,7 @@ async def main():
             "tool_call_count": diag_result["tool_call_count"],
             "execution_time": diag_result["execution_time"],
             "token_usage": diag_result["token_usage"],
-            "trajectory": "见系统运行日志", 
+            "trajectory": diag_result["full_trajectory"], # 【修复】输入完整轨迹
             "judge_model": judge_model
         })
 

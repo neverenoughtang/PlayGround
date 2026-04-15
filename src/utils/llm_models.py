@@ -37,7 +37,7 @@ def load_model(backend_model: str = "gemini-3-flash-preview") -> BaseChatModel:
             base_url=base_url,
             api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0,
-            timeout=20, # 👈 关键修复：设置 15 秒超时，拒绝无限卡死！
+            timeout=20, # 👈 关键修复：设置超时，拒绝无限卡死！
             http_client=http_client # 👈 关键修复：接管底层网络请求，确保能走通代理
         )
     else:

@@ -16,13 +16,13 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 # 故障类型注册表 (按场景分类)
 # ==========================================
 FAULT_REGISTRY = {
-    "common_link": """1. 链路层故障（适用于所有网络场景）: 
+    "common_link": """链路层故障（适用于所有网络场景）: 
     - link_loss: 发生在 ubuntu 主机上，通过 Linux TC netem 注入丢包规则，表现为网络链路具有一定丢包率（如50%），导致通信不稳定、延迟高或部分数据包丢失
     - link_latency: 发生在 ubuntu 主机上，通过 Linux TC netem 注入延迟规则，表现为网络延迟异常偏高但抖动极小，导致业务响应缓慢
     - link_jitter: 发生在 ubuntu 主机上，通过 Linux TC netem 注入延迟抖动规则，表现为网络延迟忽高忽低极不稳定，mdev 数值显著偏高
     - link_bandwidth: 发生在 ubuntu 主机上，通过 Linux TC tbf 令牌桶限速，表现为传输速度被严重限流，网络拥塞严重""",
 
-    "common_host": """2. 主机层故障（适用于所有网络场景）: 
+    "common_host": """主机层故障（适用于所有网络场景）: 
     - ip_misconfig: 发生在 ubuntu 主机上，通过 flush 网卡 IP 后配置错误地址，表现为主机无法与同网段或其他节点正常通信，IP 丢失或配错
     - default_route_missing: 发生在 ubuntu 主机上，通过删除默认路由，表现为主机同网段通信正常但跨网段通信完全不可达
     - arp_poisoning: 发生在 ubuntu 主机上，通过静态绑定伪造 MAC 地址，表现为主机局域网内无法与特定目标通信，ARP 缓存表出现异常条目
@@ -33,7 +33,7 @@ FAULT_REGISTRY = {
     - mask_error: 发生在 ubuntu 主机上，通过配置错误的子网掩码（如/30），表现为同网段内的部分相邻主机无法直接通信
     - host_port_exhaustion: 发生在 ubuntu 主机上，通过 sysctl 限制可用源端口范围为极窄值，表现为主机应用程序抛出"无法分配请求的地址"错误，无法发起新连接""",
 
-    "static_routing": """3. FRR 路由器故障（当前场景特有）: 
+    "static_routing": """FRR 路由器故障（当前场景特有）: 
     - route_missing: 发生在 frr 路由器上，通过 ip route del 删除目标网段路由，表现为主机发往特定网段的跨网段流量完全不通，提示网络不可达
     - static_route_blackhole: 发生在 frr 路由器上，通过 ip route replace blackhole 将目标网段路由改为黑洞，表现为某业务网段的数据包被神秘丢弃，流量有去无回
     - data_plane_drop: 发生在 frr 路由器上，通过 iptables FORWARD 链阻断 ICMP 报文，表现为 Ping 测试全部超时但其他 TCP/UDP 连接可能正常
@@ -41,7 +41,7 @@ FAULT_REGISTRY = {
     - ip_forward_disabled: 发生在 frr 路由器上，通过 sysctl 关闭 IPv4 转发开关，表现为路由器本机可达但转发经过它的业务流量全部中断
     - router_interface_ip_wrong: 发生在 frr 路由器上，通过 flush 接口 IP 后配置错误地址，表现为与该路由器直连的网段全部异常，ARP 与网关解析出现问题""",
 
-    "simple_bgp": """4. BGP 路由器故障（当前场景特有）: 
+    "simple_bgp": """BGP 路由器故障（当前场景特有）: 
     - bgp_neighbor_shutdown: 发生在 frr 路由器上，通过 vtysh 配置 neighbor shutdown 管理性关闭 BGP 邻居，表现为某节点跨域通信突然中断，邻居连接失败
     - bgp_withdraw_route: 发生在 frr 路由器上，通过 vtysh 删除 network 宣告或 redistribute connected，表现为邻居正常但某远端网段突然不可达
     - bgp_wrong_peer_asn: 发生在 frr 路由器上，通过 vtysh 配置错误的对端 AS 号，表现为某处 BGP 邻居始终无法建立，状态长期停留在 Idle 或 Active
@@ -49,7 +49,7 @@ FAULT_REGISTRY = {
     - bgp_local_pref_spike: 发生在 frr 路由器上，通过 vtysh route-map 设置异常高的 local-preference 值（如999），表现为跨域流量突然绕行到非预期路径
     - bgp_med_spike: 发生在 frr 路由器上，通过 vtysh route-map 设置异常高的 MED 值（如9999），表现为对端更偏好其他入口，业务路径切换异常""",
 
-    "ospf_enterprise": """5. OSPF 路由器故障（当前场景特有）: 
+    "ospf_enterprise": """OSPF 路由器故障（当前场景特有）: 
     - ospf_passive_interface: 发生在 frr 路由器上，通过 vtysh 配置 passive-interface 使接口停止发送 Hello 报文，表现为某处原本正常的 OSPF 邻居突然断开
     - ospf_cost_spike: 发生在 frr 路由器上，通过 vtysh 设置接口 OSPF cost 为异常高值（如65000），表现为流量发生大规模路径切换
     - ospf_daemon_crash: 发生在 frr 路由器上，通过 pkill ospfd 杀掉 OSPF 守护进程，表现为某路由器完全丢失所有 OSPF 路由
@@ -58,7 +58,7 @@ FAULT_REGISTRY = {
     - ospf_area_misconfig: 发生在 frr 路由器上，通过 vtysh 将接口网段宣告到错误区域，表现为某些区域间路由传播异常，部分 OSPF 邻居无法正常建立
     - ospf_auth_misconfig: 发生在 frr 路由器上，通过 vtysh 单侧配置 OSPF 认证或配置不一致密钥，表现为链路本身可达但某条 OSPF 邻接关系突然无法维持""",
 
-    "rip_internet": """6. RIP 路由器故障（当前场景特有）: 
+    "rip_internet": """RIP 路由器故障（当前场景特有）: 
     - rip_passive_interface: 发生在 frr 路由器上，通过 vtysh 配置 passive-interface 使接口停止发送 RIP 更新，表现为邻居无法再收到本端发送的 RIP 更新
     - rip_route_filter: 发生在 frr 路由器上，通过 vtysh 配置 distribute-list 阻断路由发布，表现为特定网段的对端学不到该路由
     - rip_metric_offset: 发生在 frr 路由器上，通过 vtysh offset-list 增加 RIP 度量值至15或更高，表现为特定 RIP 路由完全无法跨越多跳传播（度量值达16视为不可达）
@@ -67,14 +67,14 @@ FAULT_REGISTRY = {
     - rip_timer_misconfig: 发生在 frr 路由器上，通过 vtysh timers basic 设置异常大的定时器值（如999秒），表现为路由收敛需要数十分钟甚至无法收敛
     - rip_network_withdraw: 发生在 frr 路由器上，通过 vtysh 删除 network 宣告，表现为原本可达的远端网段突然消失""",
 
-    "p4_star": """7. P4 交换机故障（当前场景特有）: 
+    "p4_star": """P4 交换机故障（当前场景特有）: 
     - p4_bmv2_process_crash: 发生在 bmv2 交换机上，通过 pkill simple_switch 杀掉 BMv2 运行时进程，表现为途经 P4 交换机的数据流彻底中断
     - p4_table_drop: 发生在 bmv2 交换机上，通过修改 P4 转发表项动作为 drop，表现为某主机通往某 IP 丢包严重
     - p4_wrong_forwarding: 发生在 bmv2 交换机上，通过修改 P4 转发表项参数为错误 MAC 或端口号，表现为发往某个特定 IP 的数据包始终无法到达
     - p4_table_entry_missing: 发生在 bmv2 交换机上，通过删除 P4 转发表项，表现为原本互通的两台主机忽然彻底无法通信
     - p4_default_action_drop: 发生在 bmv2 交换机上，通过修改 P4 表默认动作为 drop，表现为新出现或未显式配置的流量全部无法通过交换机""",
 
-    "sdn_openflow": """8. SDN 交换机/控制器故障（当前场景特有）: 
+    "sdn_openflow": """SDN 交换机/控制器故障（当前场景特有）: 
     - sdn_controller_crash: 发生在 ryu 控制器上，通过 pkill ryu-manager/python 杀掉控制器进程，表现为 SDN 网络失去控制，新上的主机无法通信
     - ovs_disconnect: 发生在 ovs 交换机上，通过 ovs-vsctl del-controller 删除控制器配置，表现为某台交换机不再接受控制器管理
     - ovs_global_drop: 发生在 ovs 交换机上，通过 ovs-ofctl 注入高优先级全局 DROP 流表，表现为途经某台交换机的所有流量都被无差别丢弃
@@ -84,7 +84,7 @@ FAULT_REGISTRY = {
     - flow_rule_loop: 发生在 ovs 交换机上，通过 ovs-ofctl 注入自回环流表规则（in_port=X, output:X），表现为网络出现流量死循环，带宽被迅速挤占
     - ovs_fail_secure: 发生在 ovs 交换机上，通过 ovs-vsctl set-fail-mode secure 关闭本地兜底转发，表现为控制器短暂异常后交换机不再进行本地兜底转发""",
 
-    "ai_inference": """9. AI 推理服务故障（当前场景特有）:
+    "ai_inference": """AI 推理服务故障（当前场景特有）:
     - ai_service_crash: 发生在 ubuntu 主机上，通过 pkill python3 杀掉 AI 推理服务进程，表现为 AI 助手突然不再回复任何消息
     - compute_cpu_starvation: 发生在 ubuntu 主机上，通过 stress-ng 打满 CPU 资源，表现为 AI 吐字极度缓慢
     - compute_memory_exhaustion: 发生在 ubuntu 主机上，通过 stress-ng 占用大量内存（如95%），表现为 AI 服务突然无响应，推理服务频繁超时
@@ -133,6 +133,7 @@ class DiagnoseState(TypedDict):
     tool_call_count: int
     execution_time: float
     token_usage: dict
+    full_trajectory: str        # 【新增】完整诊断轨迹
     
     # 内部计时
     start_time: float  # 诊断开始时间戳
@@ -158,6 +159,8 @@ def submit_diagnosis(fault_location: str, root_cause: str) -> str:
 # 全局缓存 MCP 工具和 Client，避免每次执行图都重启进程
 _MCP_TOOLS_CACHE = None
 _MCP_CLIENT = None
+# 【新增】在类外部定义一个全局变量，作为 RAG 模型的缓存
+_GLOBAL_EXPERIENCE_RAG_CACHE = None
 
 async def get_mcp_tools(lab_name: str):
     """
@@ -282,9 +285,9 @@ async def global_inspector_node(state: DiagnoseState):
    - "丢包"：能 ping 通，但有一定丢包率（如丢包率 60%）
 
 【输出格式】
-第一行：故障表现类型（只写上述选项之一）
-第二行：ping 不通/延迟高/抖动/丢包的详细信息（写清楚哪些节点不能 ping 通哪些节点、延迟高、抖动严重或丢包；若全网联通则写"ICMP 能通，但可能存在其他问题"）
-第三行：结合整个拓扑的疑似故障的节点（若全网联通则写"所有节点都可能存在其他网络问题"）
+第一行：'[结论] ' + 故障表现类型（只写上述选项之一）
+第二行：'[详情] ' + ping 不通/延迟高/抖动/丢包的详细信息（写清楚哪些节点不能 ping 通哪些节点、延迟高、抖动严重或丢包；若全网联通则写"ICMP 能通，但可能存在其他问题"）
+第三行：'[嫌疑] ' + 结合整个拓扑的疑似故障的节点（若全网联通则写"所有节点都可能存在其他网络问题"）
 
 示例输出 1 ：
     [结论] ping不通
@@ -300,17 +303,27 @@ async def global_inspector_node(state: DiagnoseState):
     summary_response = await llm.ainvoke([HumanMessage(content=summary_prompt)])
     summary_text = summary_response.content.strip()
     
+    # 👇【新增】累加巡检节点的 Token
+    usage = state.get("token_usage", {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}).copy()
+    if hasattr(summary_response, 'usage_metadata') and summary_response.usage_metadata:
+        usage["input_tokens"] += summary_response.usage_metadata.get("input_tokens", 0)
+        usage["output_tokens"] += summary_response.usage_metadata.get("output_tokens", 0)
+        usage["total_tokens"] += summary_response.usage_metadata.get("total_tokens", 0)
+
     # 3. 解析输出
     lines = summary_text.split("\n")[0] # 第一行
-    fault_symptom = lines[5:].strip() if lines else "暂无表现"
+    fault_symptom = lines.split()[1].strip() if lines.split()[1].strip() else "暂无表现"
     
     print(f"\n[Global Inspector] 巡检完成 ✅")
-    print(f"   - Ping 总结: {summary_text}...")
+    print(f"   - Ping 总结: \n{summary_text}")
     
     return {
         "global_ping_summary": summary_text,
-        "fault_symptom": fault_symptom
+        "fault_symptom": fault_symptom,
+        "token_usage": usage  
     }
+
+
 
 
 async def experience_planner_node(state: DiagnoseState):
@@ -344,7 +357,11 @@ async def experience_planner_node(state: DiagnoseState):
     
     # 2. 从 Milvus 提取固定经验
     print("🔍 [Milvus] 正在检索固定诊断手册...")
-    milvus_kb = FaultDiagnosisKnowledgeBase(force_rebuild=False)
+    global _GLOBAL_EXPERIENCE_RAG_CACHE # 全局缓存
+    if _GLOBAL_EXPERIENCE_RAG_CACHE == None: # 如果为空
+        _GLOBAL_EXPERIENCE_RAG_CACHE = FaultDiagnosisKnowledgeBase(force_rebuild=False)
+
+    milvus_kb = _GLOBAL_EXPERIENCE_RAG_CACHE # 直接调用缓存
     
     milvus_experience = milvus_kb.search(
         query=state["problem_info"],
@@ -359,8 +376,8 @@ async def experience_planner_node(state: DiagnoseState):
     def truncate_text(text, max_len=2000):
             return text[:max_len] + "..." if len(text) > max_len else text
 
-    clean_mysql = truncate_text(mysql_experience, 2000)
-    clean_milvus = truncate_text(milvus_experience, 2000)
+    clean_mysql = truncate_text(mysql_experience, 3000)
+    clean_milvus = truncate_text(milvus_experience, 3000)
 
     knowledge_context = f"""
     【历史成功经验 (精简)】:
@@ -371,8 +388,7 @@ async def experience_planner_node(state: DiagnoseState):
     """
     
     print(f"[Experience Planner] 经验提取完成 ✅")
-    print(f"   - MySQL 经验长度: {len(clean_mysql)} 字符")
-    print(f"   - Milvus 经验长度: {len(clean_milvus)} 字符")
+    print(knowledge_context)
     
     return {"knowledge_context": knowledge_context}
 
@@ -426,7 +442,7 @@ async def diagnosis_expert_node(state: DiagnoseState):
     llm_with_tools = llm.bind_tools(tools)
     
     # 拼装系统提示词
-    fault_info = FAULT_REGISTRY["common_host"] + FAULT_REGISTRY["common_link"] + FAULT_REGISTRY[state["lab_name"]]
+    fault_info = FAULT_REGISTRY["common_link"] + "\n" +FAULT_REGISTRY["common_host"] + "\n" + FAULT_REGISTRY[state["lab_name"]]
     sys_prompt = f"""你是一名网络排障专家，负责诊断网络故障。
 
 【当前网络场景】
@@ -492,9 +508,20 @@ async def diagnosis_expert_node(state: DiagnoseState):
 - 切勿一次性调用大量不相关工具，应按逻辑链条逐步推进
 - 同样的工具+参数不要调用两次以上
 - 🚨 请保持推理过程简洁，不要重复生成已知的背景信息。如果已经有嫌疑范围，请立即调用工具进行验证。
-- ⚠ 保持语言简洁！
+- 保持语言简洁！
 """
     
+    if state["tool_call_count"] == 0:
+        # 将提示词块合并打印
+        init_log = (
+            f"\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+            f"┃ 📜 [System Prompt / 诊断专家智能体记忆初始化]                         ┃\n"
+            f"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n"
+            f"{sys_prompt}\n"
+            f"{'='*70}"
+        )
+        print(init_log)
+
     # 4. 组合最终传给大模型的消息列表
     messages_for_llm = [SystemMessage(content=sys_prompt)] + current_messages
     
@@ -567,6 +594,7 @@ async def tool_filter_node(state: DiagnoseState):
     fault_loc = state.get("fault_location", "")
     location_correct = False      # 【新增】默认为 False
     attribution_correct = False   # 【新增】默认为 False
+    usage = state.get("token_usage", {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}).copy()
 
     for tc in last_msg.tool_calls:
         tool_count += 1
@@ -616,7 +644,7 @@ async def tool_filter_node(state: DiagnoseState):
         # 智能截断超长输出
         if len(raw_str) > 1000:
             print(f"   ⚠️ 输出超长，触发智能截断...")
-            raw_str = raw_str[:998]
+            raw_str = raw_str[:995]
 
         llm = load_model(backend_model=state["backend_model"])  
         
@@ -639,6 +667,7 @@ async def tool_filter_node(state: DiagnoseState):
 
 【任务】
 结合网络拓朴、用户投诉和全局巡检结果，提取异常信息(错误的 netem 规则、IP、掩码、默认路由、路由表 DROP 规则、邻居 shutdown 状态等)，忽略冗余日志。
+注意语言一定要简洁！
 
 示例一：
     【当前网络场景】
@@ -732,7 +761,14 @@ async def tool_filter_node(state: DiagnoseState):
 """
         
         summary = await llm.ainvoke([HumanMessage(content=clean_prompt)])
-        final_output = f"【工具输出】\n{raw_str}\n [专家发现] {summary.content}"
+
+        # 👇【修改】清洗工具输出时的 Token 累加
+        if hasattr(summary, 'usage_metadata') and summary.usage_metadata:
+            usage["input_tokens"] += summary.usage_metadata.get("input_tokens", 0)
+            usage["output_tokens"] += summary.usage_metadata.get("output_tokens", 0)
+            usage["total_tokens"] += summary.usage_metadata.get("total_tokens", 0)
+
+        final_output = f"\n[工具输出]\n{raw_str}\n [专家发现] {summary.content}"
         
         print(f"   ✅ 执行成功，返回内容: {final_output}...")
         
@@ -747,8 +783,9 @@ async def tool_filter_node(state: DiagnoseState):
         "tool_call_count": tool_count,
         "diagnosis_result": diagnosis_res,
         "fault_location": fault_loc,
-        "location_correct": location_correct,      # 【新增】
-        "attribution_correct": attribution_correct  # 【新增】
+        "location_correct": location_correct,       # 【新增】
+        "attribution_correct": attribution_correct, # 【新增】
+        "token_usage": usage  # 返回更新后的 token
     }
 
 
@@ -833,6 +870,7 @@ async def summary_node(state: DiagnoseState):
 2. 每个步骤包含三部分：[Thought]（思考）、[Action]（工具调用）、[Observation]（关键发现）
 3. 输出格式必须严格遵循示例，每个步骤占3行
 4. 最多保留 5 个关键步骤
+5. **语言准确且简洁，不要啰嗦**
 
 【完整诊断轨迹】
 {full_trajectory}
@@ -871,7 +909,6 @@ async def summary_node(state: DiagnoseState):
             key_actions_str = "\n".join(diagnosis_trajectory[:30])
         
         print(f"✅ [Summary] 关键步骤提炼完成，长度: {len(key_actions_str)} 字符")
-        print(f"\n【提炼结果预览】\n{key_actions_str[:300]}...\n")
         
     except Exception as e:
         print(f"❌ [Summary] LLM 提炼失败: {e}")
@@ -899,14 +936,14 @@ async def summary_node(state: DiagnoseState):
         print(f"   - 故障表现: {state['fault_symptom']}")
         print(f"   - 根本原因: {state['diagnosis_result']}")
         print(f"   - 故障位置: {state['fault_location']}")
-        print(f"   - 关键步骤: {len(key_actions_str)} 字符")
+        print(f"   - 关键步骤: \n{key_actions_str} ")
         
     except Exception as e:
         print(f"❌ [Summary] 写入数据库失败: {e}")
         import traceback
         traceback.print_exc()
     
-    return {}
+    return {"full_trajectory": full_trajectory}
 
 
 # ==========================================
@@ -1061,6 +1098,7 @@ async def diagnose_fault(
             "output_tokens": 0,
             "total_tokens": 0
         },
+        "full_trajectory": "",          # 【新增】
         "start_time": time.time()
     }
     
@@ -1103,5 +1141,6 @@ async def diagnose_fault(
         "diagnosis_result": final_state["diagnosis_result"],
         "tool_call_count": final_state["tool_call_count"],
         "execution_time": final_state["execution_time"],
-        "token_usage": final_state["token_usage"]
+        "token_usage": final_state["token_usage"],
+        "full_trajectory": final_state["full_trajectory"] # 【新增】
     }

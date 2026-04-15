@@ -32,7 +32,7 @@ BGP_FAULT_SUITE = [
     # "随机挑一台 simple_bgp 场景中的 BGP 路由器，把它与某个已建立会话的邻居执行管理性 shutdown，直接制造 BGP 邻居被手动关闭的故障",
     # "随机挑一台 simple_bgp 场景中的 BGP 路由器，撤销对某个当前正在发布的业务网段的 network 宣告，并同时取消 redistribute connected，制造路由撤销导致的前缀消失故障",
     # "随机挑一台 simple_bgp 场景中的 BGP 路由器，把某个邻居的 remote-as 改成一个错误但合理的 ASN，例如 65099，制造邻居 AS 号配置错误导致的会话无法建立",
-    # "随机挑一台参与 BGP 建邻的路由器，在 INPUT 链中插入一条针对 TCP 179 端口的 DROP 规则，制造 ACL 阻断 BGP 控制流量的故障",
+    "随机挑一台参与 BGP 建邻的路由器，在 INPUT 链中插入一条针对 TCP 179 端口的 DROP 规则，制造 ACL 阻断 BGP 控制流量的故障",
     "随机挑一台存在多条 BGP 入方向路径可选的路由器，创建 route-map 并把某个邻居入方向的 local-preference 异常抬高到 999，制造路径偏好被错误操控的故障",
     "随机挑一台对外发布路由的 BGP 路由器，创建 route-map 并把某个邻居出方向的 MED 异常抬高到 9999，制造对端入口选择异常偏移的故障"
 ]
