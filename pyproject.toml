@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "Nika"
 version = "0.1.0"
-description = "网络故障检测智能体及测评平台"
+description = "网络故障诊断智能体系统及基准测试平台"
 readme = "README.md"
 requires-python = ">=3.12"
 
