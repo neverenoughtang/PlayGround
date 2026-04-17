@@ -12,7 +12,7 @@ from klonet_base_api import KlonetBaseAPI
 
 mcp = FastMCP("KlonetServer", log_level="ERROR")
 
-# --- 通用 Ping 工具 (3个) ---
+# --- 全局巡检工具 (4个) ---
 @mcp.tool()
 def get_reachability() -> str:
     """
@@ -149,6 +149,77 @@ def get_reachability() -> str:
 
     return "\n".join(results)
 
+@mcp.tool()
+def check_arp(node_names: str = "all") -> str:
+    """
+    检查节点的 ARP/Neigh 表。
+    Args:
+        node_names: 逗号分隔的节点名(如 'h1,h2')，填 'all' 检查所有主机和路由器。
+    """
+    lab = os.getenv("LAB_NAME")
+    API = KlonetBaseAPI(lab)
+    target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
+    
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        def _run(n):
+            out = API._run_cmd(n, "ip neigh")
+            return f"[{n} ARP/Neigh]:\n{out}" if out.strip() else ""
+        
+        outcomes = executor.map(_run, target_nodes)
+        results.extend([o for o in outcomes if o])
+        
+    return "\n".join(results) if results else "未找到 ARP 记录。"
+
+@mcp.tool()
+def check_interface(node_names: str = "all") -> str:
+    """
+    检查节点的网卡接口状态 (UP/DOWN)。
+    Args:
+        node_names: 逗号分隔的节点名(如 'h1,r1')，填 'all' 检查所有节点。
+    """
+    lab = os.getenv("LAB_NAME")
+    API = KlonetBaseAPI(lab)
+    target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
+    
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        def _run(n):
+            out = API._run_cmd(n, "ip -br link")
+            return f"[{n} Interfaces]:\n{out}" if out.strip() else ""
+            
+        outcomes = executor.map(_run, target_nodes)
+        results.extend([o for o in outcomes if o])
+        
+    return "\n".join(results) if results else "获取接口状态失败。"
+
+@mcp.tool()
+def check_frr(node_names: str = "all") -> str:
+    """
+    检查路由器的 FRR 动态路由状态 (BGP Summary & OSPF Neighbor)。
+    Args:
+        node_names: 逗号分隔的节点名，填 'all' 探测全网。
+    """
+    lab = os.getenv("LAB_NAME")
+    API = KlonetBaseAPI(lab)
+    target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
+    
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        def _run(n):
+            bgp_out = API._run_cmd(n, 'vtysh -c "show ip bgp summary" 2>/dev/null')
+            ospf_out = API._run_cmd(n, 'vtysh -c "show ip ospf neighbor" 2>/dev/null')
+            # 过滤掉不支持 vtysh 的普通主机
+            if "command not found" not in bgp_out and "Exiting" not in bgp_out:
+                return f"[{n} FRR State]:\n--BGP--\n{bgp_out}\n--OSPF--\n{ospf_out}"
+            return ""
+            
+        outcomes = executor.map(_run, target_nodes)
+        results.extend([o for o in outcomes if o])
+        
+    return "\n".join(results) if results else "未找到 FRR 配置或路由器节点不支持。"
+
+# --- 单独 ping 工具 (2个) ---
 @mcp.tool()
 def ping_by_ip(src_node: str, dst_ip: str) -> str:
     """
