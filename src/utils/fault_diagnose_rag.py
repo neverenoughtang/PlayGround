@@ -604,9 +604,9 @@ class FaultDiagnosisKnowledgeBase:
     def search(self, 
                query: str, 
                current_scenario: str = None, 
-               stage1_k: int = 25,      # 第一阶段：粗召回（扩大覆盖面）
-               stage2_k: int = 18,      # 第二阶段：快速预排（轻量级过滤）
-               final_k: int = 10,        # 第三阶段：精排后返回基准值（自适应调整）
+               stage1_k: int = 20,      # 第一阶段：粗召回（扩大覆盖面）
+               stage2_k: int = 12,      # 第二阶段：快速预排（轻量级过滤）
+               final_k: int = 6,        # 第三阶段：精排后返回基准值（自适应调整）
                enable_adaptive: bool = True) -> str:  # 是否启用自适应 final_k
         """
         三阶段渐进式召回 + 自适应重排 + 层级先验知识融合
@@ -750,14 +750,14 @@ class FaultDiagnosisKnowledgeBase:
             
             # 策略 1: 如果 Top-1 分数显著高于其他（差距 > 0.5），说明故障明确
             if len(score_list) > 1 and (top_score - score_list[1]) > 0.5:
-                adaptive_k = min(5, final_k)  # 返回少一点
+                adaptive_k = min(4, final_k)  # 返回少一点
                 print(f"[RAG] 自适应调整：检测到高置信度故障，返回 {adaptive_k} 个结果")
             
             # 策略 2: 如果前 final_k 个分数都很接近（差距 < 0.2），说明多种故障都可能
             elif len(score_list) >= final_k:
                 score_range = top_score - score_list[final_k - 1]
                 if score_range < 0.2:
-                    adaptive_k = min(final_k + 5, len(scored_docs))  # 多返回 5 个
+                    adaptive_k = min(final_k + 4, len(scored_docs))  # 多返回 5 个
                     print(f"[RAG] 自适应调整：检测到多种可能故障，返回 {adaptive_k} 个结果")
                 else:
                     adaptive_k = final_k
@@ -805,7 +805,7 @@ class FaultDiagnosisKnowledgeBase:
 # ==========================================
 if __name__ == "__main__":
     # 第一次运行时设置 force_rebuild=True 以创建新的数据库表结构
-    kb = FaultDiagnosisKnowledgeBase(force_rebuild=False)  # 首次运行改为 True，后续改为 False
+    kb = FaultDiagnosisKnowledgeBase(force_rebuild=True)  # 首次运行改为 True，后续改为 False
 
     # 测试查询 1：链路层故障（应该被优先级加成）
     query = "网络通信很慢，不稳定"

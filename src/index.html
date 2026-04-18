@@ -116,7 +116,7 @@
             <header class="flex items-center relative h-20 px-6 border-b border-gray-200 dark:border-gray-800 shrink-0 bg-gray-50 dark:bg-gray-900 z-20">
                 <!-- 左侧大标题 -->
                 <div class="text-3xl font-black tracking-wider text-gray-800 dark:text-gray-100">
-                    Nika
+                    Argus
                 </div>
                 <!-- 中央状态信息 (预留变量) -->
                 <div class="absolute left-1/2 -translate-x-1/2 flex items-center text-sm font-mono font-medium text-gray-500 dark:text-gray-400">
@@ -184,7 +184,7 @@
                                   @keydown.enter.prevent="sendMessage"
                                   rows="1" 
                                   class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-10 focus:ring-0 focus-visible:ring-0 text-sm md:text-base max-h-48 overflow-y-auto hide-scrollbar outline-none" 
-                                  placeholder="发送消息给 Nika..." 
+                                  placeholder="发送消息给 Argus..." 
                                   style="min-height: 24px; max-height: 200px;"></textarea>
                         
                         <button type="submit" 
@@ -280,7 +280,7 @@
 
                     // 2. 模拟网络请求延迟后，推送 AI 的空消息对象准备流式输出
                     setTimeout(() => {
-                        const replyFull = `您好！检测到当前环境【${labName.value}】存在异常症状指纹【${faultName.value}】。\n\n您刚刚输入了： "${text}"\n\nNika Agent 正在通过流式（SSE）打字机效果为您生成分析报告，并且我们已经全面重构了圆角气泡对话 UI！`;
+                        const replyFull = `您好！检测到当前环境【${labName.value}】存在异常症状指纹【${faultName.value}】。\n\n您刚刚输入了： "${text}"\n\nArgus Agent 正在通过流式（SSE）打字机效果为您生成分析报告，并且我们已经全面重构了圆角气泡对话 UI！`;
                         
                         const msgObj = { role: 'assistant', content: '', isTyping: true };
                         currentChat.value.messages.push(msgObj);

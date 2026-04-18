@@ -1,84 +1,67 @@
+# src/agent/diagnose_agent/synthesizer.py
+import json
 from langchain_core.messages import HumanMessage
-from utils.diagnose_experience_sql import DiagnoseExperienceBase
 from utils.llm_models import load_model
 from .state import DiagnoseState
 
-def _dict_to_flat_set(fault_dict: dict) -> set:
-    """将 {"loss": ["h1","h2"]} 拍平为 {("loss", "h1"), ("loss", "h2")} 以方便求交集"""
-    flat = set()
-    for fault, nodes in fault_dict.items():
-        if isinstance(nodes, list):
-            for node in nodes:
-                flat.add((str(fault).strip(), str(node).strip()))
-    return flat
-
 async def synthesizer_node(state: DiagnoseState):
-    print("\n" + "="*60)
-    print("📝 [Synthesizer] 正在聚合多源数据并进行综合评判...")
+    """
+    【聚合决策者】
+    接收所有 Worker 的局部诊断结果，结合全局巡检信息，
+    逻辑性地合成一份最终的复合故障清单。
+    """
+    print("\n" + "🧠 [Synthesizer] 正在汇总各路专家证据，合成最终诊断报告...")
     
     results = state.get("worker_results", [])
-    
-    # 1. 聚合所有 Worker 提交的字典
-    final_submitted = {}
+    if not results:
+        print("⚠️ [Synthesizer] 未收到任何 Worker 的诊断结果。")
+        return {"final_faults": {}}
+
+    # 准备给 LLM 的上下文：包含巡检、假设和 Worker 的提交内容
+    workers_info = ""
     for w in results:
-        for fault, nodes in w["submitted_faults"].items():
-            if fault not in final_submitted:
-                final_submitted[fault] = []
-            final_submitted[fault].extend(nodes)
-            # 去重
-            final_submitted[fault] = list(set(final_submitted[fault]))
-            
-    # 2. 计算准确率(Precision) 与 正确率(Recall)
-    expected_set = _dict_to_flat_set(state["expected_faults"])
-    submitted_set = _dict_to_flat_set(final_submitted)
-    
-    correct_pairs = len(expected_set & submitted_set)
-    precision = (correct_pairs / len(submitted_set)) if submitted_set else 0.0
-    recall = (correct_pairs / len(expected_set)) if expected_set else 0.0
-    
-    print(f"📊 期望的复合故障集: {expected_set}")
-    print(f"📊 实际诊断的故障集: {submitted_set}")
-    print(f"🎯 准确率(Precision): {precision:.2%} | 正确率/召回率(Recall): {recall:.2%}")
+        workers_info += f"- 专家ID: {w['worker_id']}\n"
+        workers_info += f"  负责假设: {w['hypothesis']}\n"
+        workers_info += f"  提交诊断: {json.dumps(w['submitted_faults'], ensure_ascii=False)}\n"
+        workers_info += f"  排查发现: {w['trajectory_log'][-500:]} (注:仅展示末尾轨迹)\n\n"
 
-    # 3. 统计全局消耗
-    total_tokens = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
-    total_tools = 0
-    full_trajectory_log = []
+    # 调用 Big 模型进行高级逻辑合成
+    llm = load_model(backend_model="qwen3.5-big")
     
-    for w in results:
-        total_tokens["input_tokens"] += w["token_usage"]["input_tokens"]
-        total_tokens["output_tokens"] += w["token_usage"]["output_tokens"]
-        total_tools += w["tool_call_count"]
-        
-        full_trajectory_log.append(f"\n--- 【{w['worker_id']}】 轨迹 ({w['hypothesis']}) ---")
-        for msg in w["trajectory"]:
-            if hasattr(msg, "content") and msg.content:
-                full_trajectory_log.append(f"[Thought]: {msg.content[:200]}")
-            if hasattr(msg, "tool_calls") and msg.tool_calls:
-                for tc in msg.tool_calls:
-                    full_trajectory_log.append(f"[Action]: {tc['name']}({tc['args']})")
-                    
-    total_tokens["total_tokens"] = total_tokens["input_tokens"] + total_tokens["output_tokens"]
-    global_trajectory = "\n".join(full_trajectory_log)
+    prompt = f"""你是网络故障诊断系统的总架构师。
+当前任务是根据多个并行排查专家的发现，合成一份最终的【复合故障清单】。
 
-    # 4. 写入经验库 (只要有发现就写)
-    if submitted_set:
-        print("💾 正在将复合排障经验注入 MySQL...")
-        mysql_db = DiagnoseExperienceBase()
-        try:
-            await mysql_db.insert_case(
-                lab_name=state["lab_name"],
-                fuzzy_complaint=f"{state['problem_info']} (复合故障分析)",
-                root_cause=str(final_submitted),
-                key_actions=global_trajectory[:2000]
-            )
-        except Exception as e:
-            print(f"❌ 写入经验库失败: {e}")
+【全局上下文】
+- 网络拓扑: {state['lab_name']}
+- 全局巡检摘要: {state['inspector_result']}
+- 用户原始投诉: {state['problem_info']}
 
-    return {
-        "final_submitted_faults": final_submitted,
-        "accuracy_metrics": {"precision": precision, "recall": recall, "correct_pairs": correct_pairs},
-        "global_trajectory": global_trajectory,
-        "global_token_usage": total_tokens,
-        "global_tool_calls": total_tools
-    }
+【各专家排查结果】
+{workers_info}
+
+【工作要求】
+1. 冲突处理：如果两个专家对同一个节点给出了矛盾的结论（例如一个说IP错，一个说网卡DOWN），请结合【全局巡检摘要】判断哪个更合理。
+2. 重复合并：将不同专家发现的同类故障进行去重合并。
+3. 逻辑验证：确保最终结论能解释【用户原始投诉】中的所有异常。
+4. 输出格式：必须输出为 JSON 字典，格式为: {{"故障名称1": ["节点1", "节点2", ...], "故障名称2": ["节点1", "节点2", ...], ...}}。
+
+请直接输出最终的 JSON 结果。
+"""
+    
+    try:
+        res = await llm.ainvoke([HumanMessage(content=prompt)])
+        # 清洗 JSON 字符串
+        clean_json = res.content.replace("```json", "").replace("```", "").strip()
+        final_faults = json.loads(clean_json)
+        print(f"✅ [Synthesizer] 最终结论合成完毕: {final_faults}")
+    except Exception as e:
+        print(f"❌ [Synthesizer] 合成逻辑出错，执行退化合并方案: {e}")
+        # 退化方案：简单的硬合并
+        final_faults = {}
+        for w in results:
+            for fault, nodes in w["submitted_faults"].items():
+                if fault not in final_faults: final_faults[fault] = []
+                final_faults[fault].extend(nodes)
+                final_faults[fault] = list(set(final_faults[fault]))
+
+    return {"final_faults": final_faults}

@@ -1,9 +1,7 @@
-# agent/main.py
 import asyncio
 import os
 import sys
 
-# --- 路径环境配置 ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.abspath(os.path.join(current_dir, ".."))
 if src_dir not in sys.path: 
@@ -12,16 +10,30 @@ if src_dir not in sys.path:
 # 导入底层接口
 from mcp_server.klonet_base_api import KlonetBaseAPI
 
-# 导入各个板块的 Agent 执行图
+# 导入各个板块的图
 from network_deploy_agent import build_deploy_graph
-from fault_inject_agent import build_inject_graph
-from diagnose_agent import diagnose_fault
+from fault_inject_agent import build_inject_graph, prewarm_inject_caches
+from diagnose_agent.graph import diagnose_fault
+from diagnose_agent.tools import prewarm_diagnose_caches
 from judge_agent import build_judge_graph
 
+async def prewarm_all_systems(lab_name: str):
+    """
+    【全局极速预热】
+    在等待用户输入期间，后台拉起所有 MCP 容器接口、载入各类大模型向量库。
+    利用 asyncio.gather 并发预热诊断和注入模块，将冷启动时间压缩到极致！
+    """
+    print("\n[System] 🔄 正在后台执行全局极速预热 (RAG / MCP / NLP)...")
+
+    # 【核心修改】并发执行预热，提升启动速度
+    await asyncio.gather(
+        prewarm_inject_caches(lab_name),
+        prewarm_diagnose_caches(lab_name)
+    )
+
+    print("[System] ✅ 全局系统极速预热完毕，等待指令发车！")
+
 def reset_topology(lab_name: str):
-    """
-    公共方法：销毁指定的网络拓扑
-    """
     print(f"\n[System] 🧹 正在销毁网络拓扑 ({lab_name})...")
     try:
         api = KlonetBaseAPI(lab_name)
@@ -32,13 +44,13 @@ def reset_topology(lab_name: str):
 
 async def main():
     print("=" * 60)
-    print("🚀 欢迎使用网络故障诊断智能体系统")
+    print("🚀 欢迎使用 Nika/Argus 网络故障仿真与诊断智能体系统")
     print("=" * 60)
 
     lab_name = None
     try:
         # ==========================================
-        # 1. 网络场景部署 -> Human_in_Loop
+        # 1. 网络场景部署 
         # ==========================================
         while True:
             deploy_query = input("\n[HIL - 部署阶段] 请输入要部署的网络场景 (例如：我需要一个静态路由网络): ")
@@ -69,23 +81,32 @@ async def main():
                 break
 
         # ==========================================
-        # 2. 网络故障注入 -> Human_in_Loop
+        # 2. 故障注入阶段 -> HIL
         # ==========================================
         while True:
-            # 初始化注入图并运行
             inject_graph = build_inject_graph()
             inject_state = await inject_graph.ainvoke({
                 "lab_name": lab_name,
                 "netenv_info": netenv_info,
                 "fault_query": fault_query,
-                "actor_model": "qwen3.5-27b",
-                "max_steps": 100
+                "actor_model": "qwen3.5-small", # 注入流程相对轻量
+                "max_steps": 150,
+                "inject_result": "",
+                "problem_info": "",
+                "expected_faults": {}
             })
             
-            problem_info = inject_state["problem_info"]
-            expected_fault = inject_state["expected_fault"]
-            expected_location = inject_state["expected_location"]
+            if inject_state["inject_result"] == "fatal":
+                print("\n❌ [System] 注入智能体遭遇致命错误退出，停止后续流程。")
+                return
 
+            problem_info = inject_state["problem_info"]
+            expected_faults = inject_state["expected_faults"]
+            
+            print(f"\n✅ [System] 故障注入完成！")
+            print(f"预期答案: {expected_faults}")
+            print(f"生成的学生投诉: {problem_info}")
+            
             # HIL: 抉择下一步
             choice = input("\n[HIL] 👉 请选择下一步:\n"
                            "  - 输入 'r' 重新进行故障注入\n"
@@ -98,22 +119,17 @@ async def main():
                 break
 
         # ==========================================
-        # 3. 故障诊断 -> Human_in_Loop
+        # 3. 故障诊断阶段 (Argus 主从阵列)
         # ==========================================
-        diag_result = None
         while True:
-            # 提示用户选择大模型及执行次数
-            diag_model = input("\n[HIL - 诊断阶段] 请输入用于诊断的 LLM 模型名 (回车默认 qwen3.5-27b): ") or "qwen3.5-27b"
-            max_steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (回车默认 100): ") or "100"
-            
+            max_steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (默认 200): ") or "200"     
+
             diag_result = await diagnose_fault(
                 lab_name=lab_name,
                 netenv_info=netenv_info,
                 problem_info=problem_info,
-                expected_fault=expected_fault,
-                expected_location=expected_location,
-                backend_model=diag_model,
-                max_steps=int(max_steps_input),
+                expected_faults=expected_faults,
+                max_steps=max_steps_input,
                 time_limit=1800.0
             )
 
@@ -128,25 +144,20 @@ async def main():
                 break
 
         # ==========================================
-        # 4. 诊断效果评测 -> 结束
+        # 4. 评测阶段 (Judge)
         # ==========================================
-        judge_model = input("\n[HIL - 评测阶段] 请选择测评 LLM 模型 (回车默认 qwen3.5-27b): ") or "qwen3.5-27b"
-        
         judge_graph = build_judge_graph()
         judge_state = await judge_graph.ainvoke({
             "netenv_info": netenv_info,
             "problem_info": problem_info,
-            "expected_fault": expected_fault,
-            "expected_location": expected_location,
-            "diagnosis_result": diag_result["diagnosis_result"],
-            "fault_location": diag_result["fault_location"],
-            "location_correct": diag_result["location_correct"],
-            "attribution_correct": diag_result["attribution_correct"],
+            "final_faults": diag_result["final_faults"],
+            "precision": diag_result["precision"],
+            "recall": diag_result["recall"],
             "tool_call_count": diag_result["tool_call_count"],
             "execution_time": diag_result["execution_time"],
             "token_usage": diag_result["token_usage"],
-            "trajectory": diag_result["full_trajectory"], # 【修复】输入完整轨迹
-            "judge_model": judge_model
+            "trajectory": diag_result["trajectory"], 
+            "judge_model": "qwen3.5-big" # 裁判使用最强推理模型
         })
 
         print("\n" + "=" * 60)
@@ -157,11 +168,8 @@ async def main():
     except KeyboardInterrupt:
         print("\n⚠️ [System] 检测到用户强制中断 (Ctrl+C)。")
     except Exception as e:
-        print(f"\n❌ [System] 运行期间发生未捕获异常: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"\n❌ [System] 系统严重异常: {e}")
     finally:
-        # 无论发生什么，保证实验拓扑环境被正确销毁
         if lab_name:
             reset_topology(lab_name)
 

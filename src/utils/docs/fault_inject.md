@@ -4,7 +4,7 @@
    - 期待故障：link_loss
    - 注入方式：
      使用工具：`tc_set(host_name, link, loss)`
-     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入目标网络链路名称（通常即主机的网卡接口名，如 `eth0`）。参数 `loss` 填入丢包率百分比（为保证效果明显，建议填入 `50`，代表 50% 丢包率）。
+     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入目标网络链路名称（通常即主机对外的链路名，如 `l1`）。参数 `loss` 填入丢包率百分比（为保证效果明显，建议填入 `50`，代表 50% 丢包率）。
    - 检测方法：
      使用工具：`node_execute(node, command)`
      步骤：参数 `node` 填入主机名称。依次执行两步：
@@ -19,7 +19,7 @@
    - 期待故障：link_latency
    - 注入方式：
      使用工具：`tc_set(host_name, link, delay_ms)`
-     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入目标网络链路名称。参数 `delay_ms` 填入延迟时间（建议填入 `100` 或更大的数值，单位为毫秒）。
+     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入目标网络链路名称（通常即主机对外的链路名，如 `l1`）。参数 `delay_ms` 填入延迟时间（建议填入 `100` 或更大的数值，单位为毫秒）。
    - 检测方法：
      使用工具：`node_execute(node, command)`
      步骤：参数 `node` 填入主机名称。依次执行：
@@ -34,7 +34,7 @@
    - 期待故障：link_jitter
    - 注入方式：
      使用工具：`tc_set(host_name, link, delay_ms, jitter_ms)`
-     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入链路名。注意：要产生抖动，必须同时设置基础延迟和抖动参数！参数 `delay_ms` 填入 `100`，参数 `jitter_ms` 填入 `50`（单位均为毫秒）。
+     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入链路名（通常即主机对外的链路名，如 `l1`）。注意：要产生抖动，必须同时设置基础延迟和抖动参数！参数 `delay_ms` 填入 `100`，参数 `jitter_ms` 填入 `50`（单位均为毫秒）。
    - 检测方法：
      使用工具：`node_execute(node, command)`
      步骤：参数 `node` 填入主机名称。依次执行：
@@ -49,7 +49,7 @@
    - 期待故障：link_bandwidth
    - 注入方式：
      使用工具：`tc_set(host_name, link, bw_kbps)`
-     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入链路名。参数 `bw_kbps` 填入限制的带宽大小（建议填入较小的值如 `100`，单位为 kbps，以产生明显的限速拥塞效果）。
+     步骤：参数 `host_name` 填入目标主机名，参数 `link` 填入链路名（通常即主机对外的链路名，如 `l1`）。参数 `bw_kbps` 填入限制的带宽大小（建议填入较小的值如 `100`，单位为 kbps，以产生明显的限速拥塞效果）。
    - 检测方法：
      使用工具：`node_execute(node, command)`
      步骤：参数 `node` 填入主机名称，参数 `command` 填入 `tc qdisc show`。

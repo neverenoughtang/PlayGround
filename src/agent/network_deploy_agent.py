@@ -266,7 +266,7 @@ if __name__ == "__main__":
         # 2. 模拟外部输入 
         initial_state = {
             "user_query": "我需要一个p4网络",
-            "deploy_model": "qwen3.5-27b",
+            "deploy_model": "qwen3.5-medium",
             "lab_name": "",
             "deploy_status": "",
             "netenv_info": ""

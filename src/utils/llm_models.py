@@ -7,15 +7,22 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-def load_model(backend_model: str = "gemini-3-flash-preview") -> BaseChatModel:
+def load_model(backend_model: str = "qwen3.5-big") -> BaseChatModel:
     """
     统一使用 ChatOpenAI 接口加载大模型，完美兼容 LangGraph 和 MCP。
     """
-    # 1. 实验室本地/云端部署的开源大模型
-    if backend_model in ["qwen3.5-27b"]:
+    # 1. 实验室本地部署的开源大模型
+    if backend_model in ["qwen3.5-big", "qwen3.5-medium", "qwen3.5-small"]:
+        if backend_model[-1] == "g":
+            URL = os.getenv("BIG_URL")
+        elif backend_model[-1] == "m":
+            URL = os.getenv("MIDIUM_URL")
+        elif backend_model[-1] == "l":
+            URL = os.getenv("SMALL_URL")
+
         llm = ChatOpenAI(
             model=backend_model,
-            base_url=os.getenv("BASE_URL"),
+            base_url=URL,
             api_key="any",
             temperature=0 # 排障任务必须为0，保证工具调用稳定性
         )

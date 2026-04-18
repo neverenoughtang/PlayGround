@@ -123,7 +123,7 @@ def run_injection_only_test(lab_name: str, fault_query: str):
         print(f"\n[System] 🤖 移交控制权给 FaultInjectAgent...")
         agent = FaultInjectAgent(
             lab_name=lab_name,
-            max_steps=50, 
+            max_steps=100, 
             netenv_info=netenv_info, 
             fault_query=fault_query,
             backend_model="qwen3.5-27b" 

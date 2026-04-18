@@ -454,7 +454,7 @@ def tc_set(
     loss: Optional[int] = None,
 ) -> str:
     """
-    在主机的指定链路上设置流量控制 (TC) 参数
+    在主机的指定链路上**设置**流量控制 (TC) 参数
     Args:
         host_name: 主机名称
         link: 链路名

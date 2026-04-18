@@ -1,4 +1,7 @@
 import os
+import socket
+import subprocess
+import time
 import pymysql
 import asyncio
 from typing import List
@@ -38,11 +41,57 @@ class DiagnoseExperienceBase:
         self.db_pass = os.getenv("MYSQL_PASSWORD", "Root@123456") # 密码
         self.db_name = os.getenv("MYSQL_DB", "agent_memory_db")   # 数据库名
 
+        # 0. 检查并拉起 MySQL Docker 容器
+        self._ensure_mysql_running()
+
         # 1. 初始化数据库表结构
         self._init_db()
 
         # 2. 预热 jieba NLP 模型
         self._init_nlp() 
+
+    def _ensure_mysql_running(self):
+        """
+        Docker 状态检查与自启守护 (MySQL)
+        """
+        print("⏳ [Summary Agent] 正在检查 MySQL 底层容器及端口状态...")
+        port_ready = False
+        try:
+            with socket.create_connection((self.db_host, self.db_port), timeout=1):
+                port_ready = True
+        except OSError:
+            pass
+
+        if port_ready:
+            print("✅ [Summary Agent] MySQL 端口(3306)通信握手成功，服务运行正常。")
+            return
+
+        print("⚠️ [Summary Agent] 发现 MySQL 端口未就绪，尝试自动唤醒 mysql 容器...")
+        try:
+            # 👇 【核心修复】：将容器名改为 diagnosis-mysql
+            container_name = "diagnosis-mysql" 
+            
+            result = subprocess.run(["docker", "start", container_name], check=False, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                print(f"❌ [Summary Agent] Docker 启动命令执行失败，错误信息: {result.stderr.strip()}")
+            else:
+                print("⏳ [Summary Agent] 容器启动指令已发送，等待端口服务就绪...")
+
+            for i in range(20):
+                try:
+                    with socket.create_connection((self.db_host, self.db_port), timeout=1):
+                        port_ready = True
+                        print("✅ [Summary Agent] MySQL 服务已完全就绪！")
+                        break
+                except OSError:
+                    import time
+                    time.sleep(1)
+                    print(f"  ... 内部服务初始化中 ({i+1}/20)")
+            if not port_ready:
+                print("❌ [Summary Agent] 警告：等待 MySQL 端口就绪超时，接下来的连接可能会失败。")
+        except Exception as e:
+            print(f"❌ [Summary Agent] 启动 Docker 容器时发生异常: {e}")
 
     def _init_nlp(self):
         """
@@ -122,7 +171,7 @@ class DiagnoseExperienceBase:
                 host=self.db_host, port=self.db_port, user=self.db_user,
                 password=self.db_pass, database=self.db_name, charset='utf8mb4'
             )
-            # 执行插入SQL指令
+            # 执行插入SQL指令(打开事务)
             with connection.cursor() as cursor:
                 insert_sql = """
                 INSERT INTO successful_cases (lab_name, fuzzy_complaint, root_cause, key_actions, complaint_tokens)
@@ -130,19 +179,21 @@ class DiagnoseExperienceBase:
                 """
                 cursor.execute(insert_sql, (lab_name, fuzzy_complaint, root_cause, key_actions, complaint_tokens))
             # 提交
-            connection.commit()
+            connection.commit() # 持久性(Durability)
 
             print("🎉 [Summary Agent] 成功将本次排障经验录入 MySQL 经验池！")
             return True
             
         except Exception as e:
             print(f"❌ [Summary Agent] 数据库写入失败: {e}")
+            # 【新增】如果失败, 将会回滚(原子性, Atomicity)
+            connection.rollback() 
             return False
         finally:
             if 'connection' in locals() and connection.open:
                 connection.close() # 关闭连接
 
-    async def search(self, lab_name: str, keyword: str, limit: int = 20) -> str:
+    async def search(self, lab_name: str, keyword: str, limit: int = 10) -> str:
         """
         极速经验查询：精确匹配 lab_name，模糊匹配 fuzzy_complaint，返回 root_cause 不重复的结构化字符串。
         命中缓存后，彻底告别 DB I/O 与语料库分词开销。
@@ -275,6 +326,8 @@ class DiagnoseExperienceBase:
             
         except Exception as e:
             print(f"❌ [Summary Agent] 删除记录失败: {e}")
+            # 【新增】如果失败, 将会回滚(原子性, Atomicity)
+            connection.rollback()             
             return False
         finally:
             if 'connection' in locals() and connection.open:
