@@ -604,9 +604,9 @@ class FaultDiagnosisKnowledgeBase:
     def search(self, 
                query: str, 
                current_scenario: str = None, 
-               stage1_k: int = 20,      # 第一阶段：粗召回（扩大覆盖面）
-               stage2_k: int = 12,      # 第二阶段：快速预排（轻量级过滤）
-               final_k: int = 6,        # 第三阶段：精排后返回基准值（自适应调整）
+               stage1_k: int = 15,      # 第一阶段：粗召回（扩大覆盖面）
+               stage2_k: int = 8,      # 第二阶段：快速预排（轻量级过滤）
+               final_k: int = 4,        # 第三阶段：精排后返回基准值（自适应调整）
                enable_adaptive: bool = True) -> str:  # 是否启用自适应 final_k
         """
         三阶段渐进式召回 + 自适应重排 + 层级先验知识融合

@@ -1,5 +1,5 @@
 import time, json
-from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from langgraph.graph import StateGraph, START, END
 from utils.llm_models import load_model
 from .state import WorkerState, WorkerResult
@@ -10,7 +10,7 @@ async def worker_think_node(state: WorkerState):
     Worker 思考决策节点。
     【重要配置】Worker 为高并发节点，统一调度 qwen3.5-small，保证速度。
     """
-    tools = await create_worker_tools(state["lab_name"], state["problem_info"])
+    tools = await create_worker_tools(state["lab_name"])
     llm = load_model(backend_model="qwen3.5-small").bind_tools(tools)
     
     if not state["messages"]:
@@ -61,17 +61,25 @@ async def worker_think_node(state: WorkerState):
 4. 当你认为已经诊断出假设中全部故障或者确认没有故障时，必须调用 submit_diagnosis() 工具提交并结束。
 
 【提交答案规范】
-梳理出所有故障名，以及发生该故障的全部节点名称，传入严格 JSON。
+梳理出所有故障名，以及发生该故障的全部节点名称，传入严格 JSON。如果**你发现没有你诊断假设之内的故障，你可以提交空值**。
 格式为 '{{<fault_1>: [fault_1_node_1, fault_1_node_2, ...], <fault_2>: [fault_2_node_1, fault_2_node_2...], ...}}'
 例如：'{{"link_loss": ["h1", "h3"], "frr_service_down": ["r2"]}}'
 
 【注意事项】
+- 你只能诊断【负责排查】的内容，不准诊断提交其他的故障
+- 有可能环境中不存在任何属于【负责排查】的故障，此时你应该提交空值
 - 切勿一次性调用大量不相关工具，应按逻辑链条逐步推进
 - 优先使用非破坏性观察类命令（show/dump/tc qdisc show/ip addr/vtysh show 等）
 - 同样的工具+参数不要调用两次以上
 - 请保持语言简洁，不要重复生成已知的背景信息。如果已经有嫌疑范围，请立即调用工具进行验证
 """
-        messages = [HumanMessage(content=sys_prompt)]
+        # 👇 【核心修复】
+        # 严格分离 SystemMessage (赋予人设与规则) 和 HumanMessage (发出具体的查询动作)
+        # 这能完美通过 Qwen multi_step_tool 的 Jinja 模板校验
+        messages = [
+            SystemMessage(content=sys_prompt),
+            HumanMessage(content=f"开始针对你的负责领域排查。")
+        ]
     else:
         messages = list(state["messages"])
         
@@ -106,7 +114,7 @@ async def worker_tool_filter_node(state: WorkerState):
         tool_count += 1
         t_name = tc["name"]
         t_args = tc["args"]
-        print(f"🔧 [{state['worker_id']}] 执行: {t_name}")
+        print(f"🔧 [{state['worker_id']}] 执行: {t_name} | 参数: {t_args}")
         
         if t_name == "submit_diagnosis":
             has_sub = True

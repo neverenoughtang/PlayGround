@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import time
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.abspath(os.path.join(current_dir, ".."))
@@ -12,39 +13,27 @@ from mcp_server.klonet_base_api import KlonetBaseAPI
 
 # 导入各个板块的图
 from network_deploy_agent import build_deploy_graph
-from fault_inject_agent import build_inject_graph, prewarm_inject_caches
+from fault_inject_agent import build_inject_graph
 from diagnose_agent.graph import diagnose_fault
-from diagnose_agent.tools import prewarm_diagnose_caches
 from judge_agent import build_judge_graph
 
-async def prewarm_all_systems(lab_name: str):
-    """
-    【全局极速预热】
-    在等待用户输入期间，后台拉起所有 MCP 容器接口、载入各类大模型向量库。
-    利用 asyncio.gather 并发预热诊断和注入模块，将冷启动时间压缩到极致！
-    """
-    print("\n[System] 🔄 正在后台执行全局极速预热 (RAG / MCP / NLP)...")
-
-    # 【核心修改】并发执行预热，提升启动速度
-    await asyncio.gather(
-        prewarm_inject_caches(lab_name),
-        prewarm_diagnose_caches(lab_name)
-    )
-
-    print("[System] ✅ 全局系统极速预热完毕，等待指令发车！")
 
 def reset_topology(lab_name: str):
     print(f"\n[System] 🧹 正在销毁网络拓扑 ({lab_name})...")
     try:
         api = KlonetBaseAPI(lab_name)
         api.lab.reset_project()
+        # 【核心修复】：底层网络资源（Docker/OVS/Redis）的销毁是异步且耗时的！
+        # 必须强行设置一个缓冲期，绝不能立刻重试，否则会撞上还没释放的旧缓存。
+        print("[System] ⏳ 正在等待 Klonet 底层容器与 Redis 缓存彻底释放 (约 6 秒)...")
+        time.sleep(6)        
         print("[System] ✅ 拓扑销毁成功。")
     except Exception as e:
         print(f"[Error] ❌ 拓扑销毁失败: {e}")
 
 async def main():
     print("=" * 60)
-    print("🚀 欢迎使用 Nika/Argus 网络故障仿真与诊断智能体系统")
+    print("🚀 欢迎使用 Argus 网络故障仿真与诊断智能体系统")
     print("=" * 60)
 
     lab_name = None
@@ -59,7 +48,7 @@ async def main():
             deploy_graph = build_deploy_graph()
             deploy_state = await deploy_graph.ainvoke({
                 "user_query": deploy_query, 
-                "deploy_model": "qwen3.5-27b", # 默认使用 qwen 决策
+                "deploy_model": "qwen3.5-small", # 默认使用 qwen 决策
                 "lab_name": "", 
                 "deploy_status": "", 
                 "netenv_info": ""
@@ -89,7 +78,7 @@ async def main():
                 "lab_name": lab_name,
                 "netenv_info": netenv_info,
                 "fault_query": fault_query,
-                "actor_model": "qwen3.5-small", # 注入流程相对轻量
+                "actor_model": "qwen3.5-medium", # 注入流程相对轻量
                 "max_steps": 150,
                 "inject_result": "",
                 "problem_info": "",
@@ -122,7 +111,7 @@ async def main():
         # 3. 故障诊断阶段 (Argus 主从阵列)
         # ==========================================
         while True:
-            max_steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (默认 200): ") or "200"     
+            max_steps_input = int(input("[HIL - 诊断阶段] 请输入最大执行次数 (默认 200): ")) or 200     
 
             diag_result = await diagnose_fault(
                 lab_name=lab_name,

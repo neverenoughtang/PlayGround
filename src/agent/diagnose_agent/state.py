@@ -27,7 +27,7 @@ class DiagnoseState(TypedDict):
     hypotheses: List[str]        # supervisor 拆分的故障假设
     
     # --- Worker 并行汇聚结果 ---
-    worker_results: Annotated[List[WorkerResult], operator.add]
+    worker_results: Annotated[List[WorkerResult], operator.add] # 可以累加
     
     # --- Synthesizer 的产出 ---
     final_faults: Dict[str, List[str]] # 聚合后的最终诊断答案
@@ -44,9 +44,11 @@ class WorkerState(TypedDict):
     """子智能体（Worker）内部局部状态"""
     worker_id: str
     hypothesis: str
+
     lab_name: str
     netenv_info: str
     problem_info: str
+    
     inspector_result: str        # Worker 可以直接读取全局巡检结果
     start_time: float
     time_limit: float

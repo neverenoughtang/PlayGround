@@ -23,13 +23,14 @@ async def synthesizer_node(state: DiagnoseState):
         workers_info += f"- 专家ID: {w['worker_id']}\n"
         workers_info += f"  负责假设: {w['hypothesis']}\n"
         workers_info += f"  提交诊断: {json.dumps(w['submitted_faults'], ensure_ascii=False)}\n"
-        workers_info += f"  排查发现: {w['trajectory_log'][-500:]} (注:仅展示末尾轨迹)\n\n"
+        workers_info += f"  排查发现: {w['trajectory_log']}\n\n"
 
     # 调用 Big 模型进行高级逻辑合成
     llm = load_model(backend_model="qwen3.5-big")
     
     prompt = f"""你是网络故障诊断系统的总架构师。
 当前任务是根据多个并行排查专家的发现，合成一份最终的【复合故障清单】。
+注意网络环境中可能有 1 条或者多条故障，每一种故障可能在多个节点发生。但是通常不会发生 3 种以上故障，同一种故障节点通常不会超过 3。
 
 【全局上下文】
 - 网络拓扑: {state['lab_name']}

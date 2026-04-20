@@ -193,7 +193,7 @@ class DiagnoseExperienceBase:
             if 'connection' in locals() and connection.open:
                 connection.close() # 关闭连接
 
-    async def search(self, lab_name: str, keyword: str, limit: int = 10) -> str:
+    async def search(self, lab_name: str, keyword: str, limit: int = 4) -> str:
         """
         极速经验查询：精确匹配 lab_name，模糊匹配 fuzzy_complaint，返回 root_cause 不重复的结构化字符串。
         命中缓存后，彻底告别 DB I/O 与语料库分词开销。

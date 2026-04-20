@@ -3,13 +3,28 @@ from langgraph.graph import StateGraph, START, END
 # 【修复】使用最新的 LangGraph Types Send 接口
 from langgraph.types import Send
 
-from tmx.Argus.src.agent.diagnose_agent.synthesizer import synthesizer_node 
+from .synthesizer import synthesizer_node 
 
 from .state import DiagnoseState, WorkerState
 from .supervisor import supervisor_node
 from .worker import worker_graph
 from .summarizer import summarizer_node
 from .tools import cleanup_mcp_client
+
+
+async def run_worker_wrapper(state: WorkerState):
+    """
+    【状态隔离防溢出节点】
+    作为父图中的执行载体调用 worker_graph。
+    核心作用：过滤掉 worker 运行结束时附带的 lab_name, problem_info 等基础字段，
+    仅将 Annotated 字段 'worker_results' 返回给父图 DiagnoseState。
+    彻底解决 INVALID_CONCURRENT_GRAPH_UPDATE 并发覆写异常。
+    """
+    # 异步执行编译好的子图
+    final_worker_state = await worker_graph.ainvoke(state)
+    
+    # 纯净返回：只把结果数组交还给父状态进行 operator.add 累加
+    return {"worker_results": final_worker_state.get("worker_results", [])}
 
 def dispatch_workers_node(state: DiagnoseState):
     """
@@ -37,7 +52,9 @@ def dispatch_workers_node(state: DiagnoseState):
             has_submitted=False,
             worker_results=[]
         )
-        sends.append(Send("worker_graph", worker_state))
+        # 👇 【修改点】：将任务发送给包装节点 run_worker_wrapper，而不是直接发给子图
+        sends.append(Send("run_worker_wrapper", worker_state)) # 唤醒子图时，把父图的状态复制给了子图
+
     return sends
 
 def build_argus_graph():
@@ -45,14 +62,15 @@ def build_argus_graph():
     
     # 注册节点
     workflow.add_node("supervisor", supervisor_node)
-    workflow.add_node("worker_graph", worker_graph) # Send 不作为传统节点，而是置于 conditional_edges 的派发函数中
+    # 👇 【修改点】：注册包装节点，无需注册 worker_graph 本身
+    workflow.add_node("run_worker_wrapper", run_worker_wrapper) # Send 不作为传统节点，而是置于 conditional_edges 的派发函数中
     workflow.add_node("synthesizer", synthesizer_node)
     workflow.add_node("summarizer", summarizer_node)
     
     # 定义工作流
     workflow.add_edge(START, "supervisor") 
-    workflow.add_conditional_edges("supervisor", dispatch_workers_node, ["worker_graph"]) # 从同步点触发并发 Send
-    workflow.add_edge("worker_graph", "synthesizer") # 总结并提交答案
+    workflow.add_conditional_edges("supervisor", dispatch_workers_node, ["run_worker_wrapper"]) # 从同步点触发并发 Send
+    workflow.add_edge("run_worker_wrapper", "synthesizer") # 总结并提交答案
     workflow.add_edge("synthesizer", "summarizer")
     workflow.add_edge("summarizer", END)
     
@@ -63,8 +81,8 @@ async def diagnose_fault(
     netenv_info: str,
     problem_info: str,
     expected_faults: dict,
-    max_steps: int = 15,
-    time_limit: float = 400.0,
+    max_steps: int = 200,
+    time_limit: float = 1800.0,
 ) -> dict:
     
     print("\n" + "="*80)

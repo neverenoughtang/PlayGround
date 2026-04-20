@@ -12,212 +12,212 @@ from klonet_base_api import KlonetBaseAPI
 
 mcp = FastMCP("KlonetServer", log_level="ERROR")
 
-# --- 全局巡检工具 (4个) ---
-@mcp.tool()
-def get_reachability() -> str:
-    """
-    自动获取全网可达性测试结果（无需输入任何参数）。
-    1. 自动从拓扑中提取所有普通主机进行两两 Ping 测试（并发执行）。
-    2. 自动识别 SDN 控制器，并测试控制器到其【直连】OVS 交换机的连通性。
-    输出结果已通过正则精简，仅保留通断状态、丢包率、错误原因及延迟统计。
-    """
-    lab = os.getenv("LAB_NAME")
-    API = KlonetBaseAPI(lab)
+# # --- 全局巡检工具 (4个) ---
+# @mcp.tool()
+# def get_reachability() -> str:
+#     """
+#     自动获取全网可达性测试结果（无需输入任何参数）。
+#     1. 自动从拓扑中提取所有普通主机进行两两 Ping 测试（并发执行）。
+#     2. 自动识别 SDN 控制器，并测试控制器到其【直连】OVS 交换机的连通性。
+#     输出结果已通过正则精简，仅保留通断状态、丢包率、错误原因及延迟统计。
+#     """
+#     lab = os.getenv("LAB_NAME")
+#     API = KlonetBaseAPI(lab)
     
-    # 获取底层拓扑以解析链路关系
-    topo_data = API.get_topo_json()
-    if "project" in topo_data and "topo" in topo_data["project"]:
-        topo = topo_data["project"]["topo"]
-    else:
-        topo = topo_data
+#     # 获取底层拓扑以解析链路关系
+#     topo_data = API.get_topo_json()
+#     if "project" in topo_data and "topo" in topo_data["project"]:
+#         topo = topo_data["project"]["topo"]
+#     else:
+#         topo = topo_data
         
-    links_dict = topo.get("links", {})
+#     links_dict = topo.get("links", {})
 
-    # 分类网络节点
-    all_hosts = API.get_all_hosts()
-    controllers = API.get_all_ryu_controllers()
-    normal_hosts = [h for h in all_hosts if h not in controllers]
+#     # 分类网络节点
+#     all_hosts = API.get_all_hosts()
+#     controllers = API.get_all_ryu_controllers()
+#     normal_hosts = [h for h in all_hosts if h not in controllers]
 
-    def _parse_ping(output: str) -> str:
-        """内部函数：使用正则表达式精简并提取 ping 的核心指标"""
-        loss_match = re.search(r"(\d+)%\s+packet\s+loss", output)
-        loss_rate = loss_match.group(1) + "%" if loss_match else "未知"
+#     def _parse_ping(output: str) -> str:
+#         """内部函数：使用正则表达式精简并提取 ping 的核心指标"""
+#         loss_match = re.search(r"(\d+)%\s+packet\s+loss", output)
+#         loss_rate = loss_match.group(1) + "%" if loss_match else "未知"
         
-        if loss_rate == "0%":
-            status = "✅ 连通"
-        elif loss_rate == "100%":
-            status = "❌ 不通"
-        elif loss_rate != "未知":
-            status = "⚠️ 部分丢包"
-        else:
-            status = "❓ 状态未知"
+#         if loss_rate == "0%":
+#             status = "✅ 连通"
+#         elif loss_rate == "100%":
+#             status = "❌ 不通"
+#         elif loss_rate != "未知":
+#             status = "⚠️ 部分丢包"
+#         else:
+#             status = "❓ 状态未知"
             
-        error_msg = ""
-        if re.search(r"Destination\s+Net(?:work)?\s+Unreachable", output, re.IGNORECASE):
-            error_msg = " [Destination Network Unreachable]"
-        elif re.search(r"Destination\s+Host\s+Unreachable", output, re.IGNORECASE):
-            error_msg = " [Destination Host Unreachable]"
-        elif "Time to live exceeded" in output:
-            error_msg = " [TTL Exceeded]"
-        elif "Name or service not known" in output or "unknown host" in output.lower():
-            error_msg = " [DNS/Hostname Resolution Failed]"
+#         error_msg = ""
+#         if re.search(r"Destination\s+Net(?:work)?\s+Unreachable", output, re.IGNORECASE):
+#             error_msg = " [Destination Network Unreachable]"
+#         elif re.search(r"Destination\s+Host\s+Unreachable", output, re.IGNORECASE):
+#             error_msg = " [Destination Host Unreachable]"
+#         elif "Time to live exceeded" in output:
+#             error_msg = " [TTL Exceeded]"
+#         elif "Name or service not known" in output or "unknown host" in output.lower():
+#             error_msg = " [DNS/Hostname Resolution Failed]"
             
-        rtt_match = re.search(r"(?:rtt|round-trip)\s+min/avg/max/mdev\s+=\s+([0-9\./]+)\s+ms", output)
-        rtt_str = f" | 时延: {rtt_match.group(1)} ms" if rtt_match else ""
+#         rtt_match = re.search(r"(?:rtt|round-trip)\s+min/avg/max/mdev\s+=\s+([0-9\./]+)\s+ms", output)
+#         rtt_str = f" | 时延: {rtt_match.group(1)} ms" if rtt_match else ""
         
-        return f"{status} | 丢包率: {loss_rate}{error_msg}{rtt_str}"
+#         return f"{status} | 丢包率: {loss_rate}{error_msg}{rtt_str}"
 
-    # ---------------- 核心并发优化区 ----------------
-    def _do_host_ping(src, dst):
-        raw_output = API.ping_pair(src, dst)
-        return f"[{src} -> {dst}] : {_parse_ping(raw_output)}"
+#     # ---------------- 核心并发优化区 ----------------
+#     def _do_host_ping(src, dst):
+#         raw_output = API.ping_pair(src, dst)
+#         return f"[{src} -> {dst}] : {_parse_ping(raw_output)}"
 
-    # 👇 修改 1：接收交换机的 IP 地址并进行 Ping 测
-    # 优化后的控制面 Ping 测函数：支持动态查 IP
-    def _do_ctrl_ping(ctrl, sw_name, sw_ip_from_json):
-        sw_ip = sw_ip_from_json
+#     # 👇 修改 1：接收交换机的 IP 地址并进行 Ping 测
+#     # 优化后的控制面 Ping 测函数：支持动态查 IP
+#     def _do_ctrl_ping(ctrl, sw_name, sw_ip_from_json):
+#         sw_ip = sw_ip_from_json
         
-        # 1. 如果拓扑 JSON 里没有写 IP，主动去交换机容器里现场查！
-        if not sw_ip:
-            # hostname -I 会返回容器的所有 IP，通常第一个就是 Docker 分配的管理网口(eth0) IP
-            raw_ip_output = API._run_cmd(sw_name, "hostname -I")
-            if raw_ip_output and raw_ip_output.strip():
-                # 取以空格分隔的第一个 IP
-                sw_ip = raw_ip_output.strip().split()[0]
+#         # 1. 如果拓扑 JSON 里没有写 IP，主动去交换机容器里现场查！
+#         if not sw_ip:
+#             # hostname -I 会返回容器的所有 IP，通常第一个就是 Docker 分配的管理网口(eth0) IP
+#             raw_ip_output = API._run_cmd(sw_name, "hostname -I")
+#             if raw_ip_output and raw_ip_output.strip():
+#                 # 取以空格分隔的第一个 IP
+#                 sw_ip = raw_ip_output.strip().split()[0]
                 
-        # 2. 如果查都查不到，再报未知
-        if not sw_ip:
-            return f"[{ctrl} -> {sw_name}] : ❓ 状态未知 | 未配置且无法动态获取管理IP，无法Ping测"
+#         # 2. 如果查都查不到，再报未知
+#         if not sw_ip:
+#             return f"[{ctrl} -> {sw_name}] : ❓ 状态未知 | 未配置且无法动态获取管理IP，无法Ping测"
             
-        # 3. 拿到 IP 后进行真实的 Ping 测
-        raw_output = API._run_cmd(ctrl, f"ping -c 5 -W 2 {sw_ip}")
-        return f"[{ctrl} -> {sw_name}({sw_ip})] : {_parse_ping(raw_output)}"
+#         # 3. 拿到 IP 后进行真实的 Ping 测
+#         raw_output = API._run_cmd(ctrl, f"ping -c 5 -W 2 {sw_ip}")
+#         return f"[{ctrl} -> {sw_name}({sw_ip})] : {_parse_ping(raw_output)}"
 
-    results = []
+#     results = []
     
-    # 收集待测试的 Host-to-Host 对
-    host_pairs = [(hi, hj) for hi in normal_hosts for hj in normal_hosts if hi != hj]
+#     # 收集待测试的 Host-to-Host 对
+#     host_pairs = [(hi, hj) for hi in normal_hosts for hj in normal_hosts if hi != hj]
     
-    # 👇 修改 2：收集 Controller-to-Switch 时，把 IP 一起解析出来
-    ctrl_pairs = []
-    if controllers:
-        for ctrl in controllers:
-            for link_name, link_info in links_dict.items():
-                src = link_info.get("source")
-                tgt = link_info.get("target")
-                src_type = link_info.get("sourceType", "")
-                tgt_type = link_info.get("targetType", "")
+#     # 👇 修改 2：收集 Controller-to-Switch 时，把 IP 一起解析出来
+#     ctrl_pairs = []
+#     if controllers:
+#         for ctrl in controllers:
+#             for link_name, link_info in links_dict.items():
+#                 src = link_info.get("source")
+#                 tgt = link_info.get("target")
+#                 src_type = link_info.get("sourceType", "")
+#                 tgt_type = link_info.get("targetType", "")
                 
-                sw_name = None
-                sw_ip = ""
+#                 sw_name = None
+#                 sw_ip = ""
                 
-                # 判断控制器是否在源或目的端，并且另一端是交换机
-                if src == ctrl and tgt_type in ["switch", "ovs"]:
-                    sw_name = tgt
-                    # 提取 targetIP，并去掉掩码后缀 (如 /24)
-                    sw_ip = link_info.get("targetIP", "").split("/")[0] 
-                elif tgt == ctrl and src_type in ["switch", "ovs"]:
-                    sw_name = src
-                    # 提取 sourceIP，并去掉掩码后缀
-                    sw_ip = link_info.get("sourceIP", "").split("/")[0]
+#                 # 判断控制器是否在源或目的端，并且另一端是交换机
+#                 if src == ctrl and tgt_type in ["switch", "ovs"]:
+#                     sw_name = tgt
+#                     # 提取 targetIP，并去掉掩码后缀 (如 /24)
+#                     sw_ip = link_info.get("targetIP", "").split("/")[0] 
+#                 elif tgt == ctrl and src_type in ["switch", "ovs"]:
+#                     sw_name = src
+#                     # 提取 sourceIP，并去掉掩码后缀
+#                     sw_ip = link_info.get("sourceIP", "").split("/")[0]
                 
-                # 记录 (控制器名, 交换机名, 交换机IP)
-                if sw_name:
-                    # 使用 set 去重机制防止同一链路被重复添加（针对某些双向记录的拓扑）
-                    if not any(p[1] == sw_name for p in ctrl_pairs):
-                        ctrl_pairs.append((ctrl, sw_name, sw_ip))
+#                 # 记录 (控制器名, 交换机名, 交换机IP)
+#                 if sw_name:
+#                     # 使用 set 去重机制防止同一链路被重复添加（针对某些双向记录的拓扑）
+#                     if not any(p[1] == sw_name for p in ctrl_pairs):
+#                         ctrl_pairs.append((ctrl, sw_name, sw_ip))
 
-    # 使用多线程池并发执行（限制并发数 20，避免打满底层的 Docker Daemon）
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        # 并发执行 Host-to-Host
-        if len(normal_hosts) >= 2:
-            results.append("=== Host-to-Host 可达性 ===")
-            # executor.map 会并发执行并保持返回顺序
-            host_outcomes = executor.map(lambda p: _do_host_ping(p[0], p[1]), host_pairs)
-            results.extend(host_outcomes)
-        else:
-            results.append("[-] 普通主机数量少于 2，跳过 Host-to-Host 测试")
+#     # 使用多线程池并发执行（限制并发数 20，避免打满底层的 Docker Daemon）
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+#         # 并发执行 Host-to-Host
+#         if len(normal_hosts) >= 2:
+#             results.append("=== Host-to-Host 可达性 ===")
+#             # executor.map 会并发执行并保持返回顺序
+#             host_outcomes = executor.map(lambda p: _do_host_ping(p[0], p[1]), host_pairs)
+#             results.extend(host_outcomes)
+#         else:
+#             results.append("[-] 普通主机数量少于 2，跳过 Host-to-Host 测试")
             
-        # 👇 修改 3：并发执行 SDN 控制面测试，传入三个参数
-        if controllers:
-            results.append("\n=== SDN 控制面可达性 (Controller -> Connected OVS) ===")
-            if ctrl_pairs:
-                ctrl_outcomes = executor.map(lambda p: _do_ctrl_ping(p[0], p[1], p[2]), ctrl_pairs)
-                results.extend(ctrl_outcomes)
-            else:
-                results.append("[-] 当前拓扑中控制器没有直连的交换机。")
+#         # 👇 修改 3：并发执行 SDN 控制面测试，传入三个参数
+#         if controllers:
+#             results.append("\n=== SDN 控制面可达性 (Controller -> Connected OVS) ===")
+#             if ctrl_pairs:
+#                 ctrl_outcomes = executor.map(lambda p: _do_ctrl_ping(p[0], p[1], p[2]), ctrl_pairs)
+#                 results.extend(ctrl_outcomes)
+#             else:
+#                 results.append("[-] 当前拓扑中控制器没有直连的交换机。")
 
-    return "\n".join(results)
+#     return "\n".join(results)
 
-@mcp.tool()
-def check_arp(node_names: str = "all") -> str:
-    """
-    检查节点的 ARP/Neigh 表。
-    Args:
-        node_names: 逗号分隔的节点名(如 'h1,h2')，填 'all' 检查所有主机和路由器。
-    """
-    lab = os.getenv("LAB_NAME")
-    API = KlonetBaseAPI(lab)
-    target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
+# @mcp.tool()
+# def check_arp(node_names: str = "all") -> str:
+#     """
+#     检查节点的 ARP/Neigh 表。
+#     Args:
+#         node_names: 逗号分隔的节点名(如 'h1,h2')，填 'all' 检查所有主机和路由器。
+#     """
+#     lab = os.getenv("LAB_NAME")
+#     API = KlonetBaseAPI(lab)
+#     target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
     
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        def _run(n):
-            out = API._run_cmd(n, "ip neigh")
-            return f"[{n} ARP/Neigh]:\n{out}" if out.strip() else ""
+#     results = []
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+#         def _run(n):
+#             out = API._run_cmd(n, "ip neigh")
+#             return f"[{n} ARP/Neigh]:\n{out}" if out.strip() else ""
         
-        outcomes = executor.map(_run, target_nodes)
-        results.extend([o for o in outcomes if o])
+#         outcomes = executor.map(_run, target_nodes)
+#         results.extend([o for o in outcomes if o])
         
-    return "\n".join(results) if results else "未找到 ARP 记录。"
+#     return "\n".join(results) if results else "未找到 ARP 记录。"
 
-@mcp.tool()
-def check_interface(node_names: str = "all") -> str:
-    """
-    检查节点的网卡接口状态 (UP/DOWN)。
-    Args:
-        node_names: 逗号分隔的节点名(如 'h1,r1')，填 'all' 检查所有节点。
-    """
-    lab = os.getenv("LAB_NAME")
-    API = KlonetBaseAPI(lab)
-    target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
+# @mcp.tool()
+# def check_interface(node_names: str = "all") -> str:
+#     """
+#     检查节点的网卡接口状态 (UP/DOWN)。
+#     Args:
+#         node_names: 逗号分隔的节点名(如 'h1,r1')，填 'all' 检查所有节点。
+#     """
+#     lab = os.getenv("LAB_NAME")
+#     API = KlonetBaseAPI(lab)
+#     target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
     
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        def _run(n):
-            out = API._run_cmd(n, "ip -br link")
-            return f"[{n} Interfaces]:\n{out}" if out.strip() else ""
+#     results = []
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+#         def _run(n):
+#             out = API._run_cmd(n, "ip -br link")
+#             return f"[{n} Interfaces]:\n{out}" if out.strip() else ""
             
-        outcomes = executor.map(_run, target_nodes)
-        results.extend([o for o in outcomes if o])
+#         outcomes = executor.map(_run, target_nodes)
+#         results.extend([o for o in outcomes if o])
         
-    return "\n".join(results) if results else "获取接口状态失败。"
+#     return "\n".join(results) if results else "获取接口状态失败。"
 
-@mcp.tool()
-def check_frr(node_names: str = "all") -> str:
-    """
-    检查路由器的 FRR 动态路由状态 (BGP Summary & OSPF Neighbor)。
-    Args:
-        node_names: 逗号分隔的节点名，填 'all' 探测全网。
-    """
-    lab = os.getenv("LAB_NAME")
-    API = KlonetBaseAPI(lab)
-    target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
+# @mcp.tool()
+# def check_frr(node_names: str = "all") -> str:
+#     """
+#     检查路由器的 FRR 动态路由状态 (BGP Summary & OSPF Neighbor)。
+#     Args:
+#         node_names: 逗号分隔的节点名，填 'all' 探测全网。
+#     """
+#     lab = os.getenv("LAB_NAME")
+#     API = KlonetBaseAPI(lab)
+#     target_nodes = API.get_all_nodes() if node_names == "all" else [n.strip() for n in node_names.split(",")]
     
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        def _run(n):
-            bgp_out = API._run_cmd(n, 'vtysh -c "show ip bgp summary" 2>/dev/null')
-            ospf_out = API._run_cmd(n, 'vtysh -c "show ip ospf neighbor" 2>/dev/null')
-            # 过滤掉不支持 vtysh 的普通主机
-            if "command not found" not in bgp_out and "Exiting" not in bgp_out:
-                return f"[{n} FRR State]:\n--BGP--\n{bgp_out}\n--OSPF--\n{ospf_out}"
-            return ""
+#     results = []
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+#         def _run(n):
+#             bgp_out = API._run_cmd(n, 'vtysh -c "show ip bgp summary" 2>/dev/null')
+#             ospf_out = API._run_cmd(n, 'vtysh -c "show ip ospf neighbor" 2>/dev/null')
+#             # 过滤掉不支持 vtysh 的普通主机
+#             if "command not found" not in bgp_out and "Exiting" not in bgp_out:
+#                 return f"[{n} FRR State]:\n--BGP--\n{bgp_out}\n--OSPF--\n{ospf_out}"
+#             return ""
             
-        outcomes = executor.map(_run, target_nodes)
-        results.extend([o for o in outcomes if o])
+#         outcomes = executor.map(_run, target_nodes)
+#         results.extend([o for o in outcomes if o])
         
-    return "\n".join(results) if results else "未找到 FRR 配置或路由器节点不支持。"
+#     return "\n".join(results) if results else "未找到 FRR 配置或路由器节点不支持。"
 
 # --- 单独 ping 工具 (2个) ---
 @mcp.tool()
