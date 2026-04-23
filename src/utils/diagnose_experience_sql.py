@@ -50,14 +50,14 @@ class DiagnoseExperienceBase:
         在类实例化时，一次性把自定义领域词典加载进内存，并触发 jieba 的懒加载构建前缀树。
         这样可以把 0.75s 的耗时转移到系统启动阶段，让用户的 Search 实时响应。
         """
-        print("⏳ [Summary Agent] 正在预热 NLP 模型与专有名词库...")
+        # print("⏳ [Summary Agent] 正在预热 NLP 模型与专有名词库...")
         domain_words = DOMAIN_WORDS
         for word in domain_words:
             jieba.add_word(word)
 
         # 强行切分一个词，触发 jieba 内部懒加载读取 /tmp/jieba.cache
         _ = jieba.lcut("网络故障诊断预热完成")
-        print("✅ [Summary Agent] NLP 模型预热完成！")
+        # print("✅ [Summary Agent] NLP 模型预热完成！")
 
     def _init_db(self):
         """
@@ -95,7 +95,7 @@ class DiagnoseExperienceBase:
                 cursor.execute(create_table_sql)
             
             connection.commit() # 提交 DB 建立表结构
-            print("✅ [Summary Agent] 数据库表结构初始化/检查完成。")
+            # print("✅ [Summary Agent] 数据库表结构初始化/检查完成。")
             
         except Exception as e:
             print(f"❌ [Summary Agent] 数据库连接或初始化失败: {e}")
@@ -155,7 +155,7 @@ class DiagnoseExperienceBase:
         Returns:
             response: 拼接好的 prompt 字符串，可直接喂给 agent
         """
-        print(f"🔍 [Summary Agent] 正在查询场景 '{lab_name}' 下，关于 '{keyword}' 的历史排障经验(BM25)...")
+        # print(f"🔍 [Summary Agent] 正在查询场景 '{lab_name}' 下，关于 '{keyword}' 的历史排障经验(BM25)...")
         
         try:
             # 1. 查库获取该场景下所有记录及预分词结果
@@ -320,17 +320,17 @@ if __name__ == "__main__":
         # # 2. 查询 1 次 Case
         # # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
         # query_result = await DB.search(
-        #     lab_name="ospf_enterprise", 
-        #     keyword="断网", 
+        #     lab_name="ai_inference", 
+        #     keyword="Server 节点上的 AI 推理服务进程意外终止，导致客户端无法访问 AI 推理服务。", 
         #     limit=10
         # )
         # print("\n👇 返回给 Agent 的 System Prompt 补充内容：\n")
         # print(query_result)
         # print("="*40)
 
-        # # 3. 清空
-        # # 测试结束后，恢复数据库原状 (可选)
-        # await DB.clear_all_cases()
+        # # 3. 删除
+        # await DB.delete_case_by_id(59)
+        # await DB.delete_case_by_id(60)
 
     # 运行异步测试主函数
     asyncio.run(test())

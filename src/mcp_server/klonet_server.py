@@ -127,8 +127,8 @@ def get_reachability() -> str:
                     if not any(p[1] == sw_name for p in ctrl_pairs):
                         ctrl_pairs.append((ctrl, sw_name, sw_ip))
 
-    # 使用多线程池并发执行（限制并发数 20，避免打满底层的 Docker Daemon）
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    # 使用多线程池并发执行（限制并发数 100，避免打满底层的 Docker Daemon）
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         # 并发执行 Host-to-Host
         if len(normal_hosts) >= 2:
             results.append("=== Host-to-Host 可达性 ===")
@@ -372,48 +372,48 @@ def ovs_get_bridge_protocols(node: str, bridge_name: str) -> str:
     API = KlonetBaseAPI(lab)
     return API._run_cmd(node, f"ovs-vsctl get bridge {bridge_name} protocols")
 
-# --- Linux TC 工具 (1个) ---
-@mcp.tool()
-def tc_set(
-    host_name: str,
-    link: str,
-    bw_kbps: Optional[int] = None,
-    delay_ms: Optional[int] = None,
-    jitter_ms: Optional[int] = None,
-    loss: Optional[int] = None,
-) -> str:
-    """
-    在主机的指定链路上设置流量控制 (TC) 参数
-    Args:
-        host_name: 主机名称
-        link: 链路名
-        bw_kbps: 带宽限制(可选)
-        delay_ms: 时延(ms, 可选)
-        jitter_ms: 抖动(ms, 可选)
-        loss: 丢包率(%, 可选)
+# # --- Linux TC 工具 (1个) ---
+# @mcp.tool()
+# def tc_set(
+#     host_name: str,
+#     link: str,
+#     bw_kbps: Optional[int] = None,
+#     delay_ms: Optional[int] = None,
+#     jitter_ms: Optional[int] = None,
+#     loss: Optional[int] = None,
+# ) -> str:
+#     """
+#     在主机的指定链路上设置流量控制 (TC) 参数
+#     Args:
+#         host_name: 主机名称
+#         link: 链路名
+#         bw_kbps: 带宽限制(可选)
+#         delay_ms: 时延(ms, 可选)
+#         jitter_ms: 抖动(ms, 可选)
+#         loss: 丢包率(%, 可选)
         
-    Returns:
-        response (str): 包含端口监听状态和 Python 推理进程详情。
-    """
-    lab = os.getenv("LAB_NAME")
-    API = KlonetBaseAPI(lab) 
+#     Returns:
+#         response (str): 包含端口监听状态和 Python 推理进程详情。
+#     """
+#     lab = os.getenv("LAB_NAME")
+#     API = KlonetBaseAPI(lab) 
 
-    config = {
-        "linkchoice": "static",
-        "link": link,
-        "ne": host_name
-    }
+#     config = {
+#         "linkchoice": "static",
+#         "link": link,
+#         "ne": host_name
+#     }
 
-    if bw_kbps is not None:
-        config["bw_kbps"] = str(bw_kbps)
-    if delay_ms is not None:
-        config["delay_us"] = str(delay_ms * 1000)
-    if jitter_ms is not None:
-        config["jitter_us"] = str(jitter_ms * 1000)
-    if loss is not None:
-        config["loss"] = str(loss)
+#     if bw_kbps is not None:
+#         config["bw_kbps"] = str(bw_kbps)
+#     if delay_ms is not None:
+#         config["delay_us"] = str(delay_ms * 1000)
+#     if jitter_ms is not None:
+#         config["jitter_us"] = str(jitter_ms * 1000)
+#     if loss is not None:
+#         config["loss"] = str(loss)
 
-    return str(API.lab.configure_link(config=config))
+#     return str(API.lab.configure_link(config=config))
 
 
 # --- AI 算网场景专属探测工具 (2个) ---

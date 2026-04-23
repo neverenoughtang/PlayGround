@@ -164,7 +164,7 @@ class FaultDiagnosisKnowledgeBase:
         self._ensure_milvus_running() # 在加载模型和连接数据库之前，先唤醒沉睡的容器
 
         # ----- 2. 加载 Embedding 模型（向量化模型）-----
-        print("[RAG] 正在加载 BGE-M3 向量化模型...")
+        # print("[RAG] 正在加载 BGE-M3 向量化模型...")
         self.embeddings = HuggingFaceEmbeddings(
             model_name="BAAI/bge-m3",            # 模型名称：北京智源的 BGE-M3，支持中英文，1024维输出
             model_kwargs={'device': 'cpu'},      # 用 CPU 推理
@@ -173,7 +173,7 @@ class FaultDiagnosisKnowledgeBase:
         self.embedding_dim = 1024  # BGE-M3 模型输出的向量维度是 1024
 
         # ----- 3. 加载 Reranker 模型（重排模型）-----
-        print("[RAG] 正在加载 BGE-Reranker-v2-M3 重排模型...")
+        # print("[RAG] 正在加载 BGE-Reranker-v2-M3 重排模型...")
         self.cross_encoder = CrossEncoder(
             model_name_or_path="BAAI/bge-reranker-v2-m3",  # 北京智源的重排模型
             device="cpu",       # 用 CPU 推理
@@ -187,7 +187,7 @@ class FaultDiagnosisKnowledgeBase:
         self.docs = []  # 初始化空列表，存储所有文档块
         self.doc_priorities = []  # 【新增】缓存每个文档的层级优先级权重
 
-        print(f"[RAG] 正在连接企业级 Milvus 数据库 ({self.db_uri})...")
+        # print(f"[RAG] 正在连接企业级 Milvus 数据库 ({self.db_uri})...")
         self.client = MilvusClient(uri=self.db_uri)
         
         # 调用智能初始化方法：判断是建新表还是读取旧表恢复数据
@@ -197,31 +197,31 @@ class FaultDiagnosisKnowledgeBase:
         """
         一次性将网络领域专有词典加载进内存，避免运行时冷启动开销
         """
-        print("[RAG] 正在预热 jieba NLP 模型与专有名词库...")
+        # print("[RAG] 正在预热 jieba NLP 模型与专有名词库...")
         for word in DOMAIN_WORDS:
             jieba.add_word(word)
         # 强行切分一个词，触发 jieba 内部大字典的懒加载机制
         _ = jieba.lcut("故障诊断引擎热加载完成")
-        print("[RAG] NLP 模型预热完成！")
+        # print("[RAG] NLP 模型预热完成！")
 
     def _ensure_milvus_running(self):
         """
         Docker 状态检查与自启守护
         确保 Milvus 容器组正常运行，若未运行则自动唤醒
         """
-        print("[RAG] 正在检查 Milvus 底层容器状态...")
+        # print("[RAG] 正在检查 Milvus 底层容器状态...")
         try:
             result = subprocess.run(
                 ["docker", "inspect", "-f", "{{.State.Running}}", "milvus-standalone"],
                 capture_output=True, text=True
             )
             if "true" not in result.stdout.lower():
-                print("[RAG] 发现 Milvus 容器组未运行，正在自动唤醒...")
+                # print("[RAG] 发现 Milvus 容器组未运行，正在自动唤醒...")
                 subprocess.run(
                     ["docker", "start", "milvus-etcd", "milvus-minio", "milvus-standalone"], 
                     check=True
                 )
-                print("[RAG] 容器组已拉起，正在等待 19530 端口服务就绪...")
+                # print("[RAG] 容器组已拉起，正在等待 19530 端口服务就绪...")
                 port_ready = False
 
                 # 轮询探测端口 (polling)
@@ -229,7 +229,7 @@ class FaultDiagnosisKnowledgeBase:
                     try:
                         with socket.create_connection(("127.0.0.1", 19530), timeout=1):
                             port_ready = True
-                            print("[RAG] 端口 19530 通信握手成功，Milvus 服务已完全就绪！")
+                            # print("[RAG] 端口 19530 通信握手成功，Milvus 服务已完全就绪！")
                             break
                     except OSError:
                         time.sleep(1)
@@ -237,11 +237,14 @@ class FaultDiagnosisKnowledgeBase:
                 if not port_ready:
                     print("[RAG] ⚠️ 警告：等待 Milvus 端口就绪超时，接下来的连接可能会失败。")
             else:
-                print("[RAG] Milvus 容器组运行正常，无需唤醒。")
+                # print("[RAG] Milvus 容器组运行正常，无需唤醒。")
+                pass
         except FileNotFoundError:
-            print("[RAG] ❌ 错误：未找到 docker 命令，请确认宿主机环境。")
+            # print("[RAG] ❌ 错误：未找到 docker 命令，请确认宿主机环境。")
+            pass
         except subprocess.CalledProcessError as e:
-            print(f"[RAG] ❌ 启动 Docker 容器失败，错误码 {e.returncode}。")
+            # print(f"[RAG] ❌ 启动 Docker 容器失败，错误码 {e.returncode}。")
+            pass
 
     def _parse_fault_metadata(self, title: str) -> dict:
         """
@@ -340,7 +343,7 @@ class FaultDiagnosisKnowledgeBase:
         3. 从标题中提取故障名称、节点类型、适用场景等元数据
         4. 将标题信息注入正文（上下文增强）
         """
-        print("[RAG] 正在读取本地 Markdown 文档并进行语义切块...")
+        # print("[RAG] 正在读取本地 Markdown 文档并进行语义切块...")
         with open(self.md_path, "r", encoding="utf-8") as f:
             md_content = f.read()
 
@@ -372,7 +375,7 @@ class FaultDiagnosisKnowledgeBase:
             priority_weight = FAULT_LEVEL_PRIORITY.get(fault_level, 1.0)
             self.doc_priorities.append(priority_weight)
         
-        print(f"[RAG] 成功切分并解析了 {len(self.docs)} 个故障诊断知识块。")
+        # print(f"[RAG] 成功切分并解析了 {len(self.docs)} 个故障诊断知识块。")
 
     def _smart_init_milvus(self, force_rebuild: bool):
         """
@@ -383,15 +386,15 @@ class FaultDiagnosisKnowledgeBase:
         """
         if self.client.has_collection(collection_name=self.collection_name):
             if force_rebuild:
-                print(f"[RAG] 收到强制重建指令，正在摧毁旧集合 '{self.collection_name}'...")
+                # print(f"[RAG] 收到强制重建指令，正在摧毁旧集合 '{self.collection_name}'...")
                 self.client.drop_collection(collection_name=self.collection_name)
                 # 摧毁后继续执行后面的建库逻辑
             else:
                 # 【架构升级】不重建时，彻底抛弃本地 MD 读取，直接用数据库做全量内存还原
-                print(f"[RAG] 检测到集合 '{self.collection_name}' 已存在且未要求重建，准备从数据库热加载！")
+                # print(f"[RAG] 检测到集合 '{self.collection_name}' 已存在且未要求重建，准备从数据库热加载！")
                 self.client.load_collection(collection_name=self.collection_name)
                 
-                print("[RAG] 正在从 Milvus 读取并恢复所有历史原文、元数据与 NLP 分词缓存...")
+                # print("[RAG] 正在从 Milvus 读取并恢复所有历史原文、元数据与 NLP 分词缓存...")
                 # 通过 filter id >= 0 拉取全量实体
                 results = self.client.query(
                     collection_name=self.collection_name,
@@ -426,13 +429,13 @@ class FaultDiagnosisKnowledgeBase:
                 
                 # 瞬间构建 BM25 模型，完美绕过重构开销
                 self.bm25_model = BM25Plus(tokenized_corpus)
-                print(f"[RAG] 成功从数据库缓存还原了 {len(self.docs)} 个知识块，检索系统已就绪！")
+                # print(f"[RAG] 成功从数据库缓存还原了 {len(self.docs)} 个知识块，检索系统已就绪！")
                 return  # 直接返回，跳过后面的建表和插数据逻辑
 
         # ==============================================
         # 执行到此处，说明是【首次建库】或【被 Drop 后重建】
         # ==============================================
-        print(f"[RAG] 正在创建全新 Schema 并准备从零写入数据...")
+        # print(f"[RAG] 正在创建全新 Schema 并准备从零写入数据...")
         
         # 1. 因为是新建，必须先把本地的 Markdown 读取到 self.docs 中
         self._load_and_split_docs()
@@ -472,7 +475,7 @@ class FaultDiagnosisKnowledgeBase:
         2. 执行中文分词并缓存
         3. 将向量、原文、元数据、分词结果一并写入数据库
         """
-        print(f"[RAG] 正在生成语义向量与词元划分，并全量同步到 Milvus...")
+        # print(f"[RAG] 正在生成语义向量与词元划分，并全量同步到 Milvus...")
         
         texts = [doc.page_content for doc in self.docs]
         
@@ -500,7 +503,7 @@ class FaultDiagnosisKnowledgeBase:
             
         self.client.insert(collection_name=self.collection_name, data=data)
         self.client.load_collection(collection_name=self.collection_name)
-        print("[RAG] 数据库首次同步写入彻底完成！")
+        # print("[RAG] 数据库首次同步写入彻底完成！")
 
     def _filter_by_scenario(self, docs: list, current_scenario: str) -> list:
         """
@@ -588,9 +591,9 @@ class FaultDiagnosisKnowledgeBase:
         priority_normalized = priority_weights / max_priority
         
         # 4. 加权融合（三路特征融合）
-        alpha = 0.5  # 向量语义相似度权重（最重要）
-        beta = 0.3   # BM25 关键词权重（次要）
-        gamma = 0.2  # 层级先验权重（辅助）
+        alpha = 0.4  # 向量语义相似度权重（最重要）
+        beta = 0.5   # BM25 关键词权重（次要）
+        gamma = 0.1  # 层级先验权重（辅助）
         
         combined_scores = (alpha * vector_similarities + 
                           beta * bm25_normalized + 
@@ -601,11 +604,11 @@ class FaultDiagnosisKnowledgeBase:
         
         return [doc for doc, score in scored_docs[:top_k]]
 
-    def search(self, 
+    async def search(self, 
                query: str, 
                current_scenario: str = None, 
                stage1_k: int = 25,      # 第一阶段：粗召回（扩大覆盖面）
-               stage2_k: int = 18,      # 第二阶段：快速预排（轻量级过滤）
+               stage2_k: int = 20,      # 第二阶段：快速预排（轻量级过滤）
                final_k: int = 10,        # 第三阶段：精排后返回基准值（自适应调整）
                enable_adaptive: bool = True) -> str:  # 是否启用自适应 final_k
         """
@@ -643,7 +646,7 @@ class FaultDiagnosisKnowledgeBase:
         # ==========================================
         # Stage 1: 双路召回（扩大覆盖面）
         # ==========================================
-        print(f"[RAG] Stage 1: 双路召回 - 目标各召回 {stage1_k} 个文档")
+        # print(f"[RAG] Stage 1: 双路召回 - 目标各召回 {stage1_k} 个文档")
         
         # 路径 1: BM25 关键词召回
         tokenized_query = jieba.lcut(query.lower())
@@ -698,7 +701,7 @@ class FaultDiagnosisKnowledgeBase:
         # ==========================================
         # Stage 2: 快速预排（多样性保证 + 去重 + 层级先验）
         # ==========================================
-        print(f"[RAG] Stage 2: 快速预排 - 目标筛选 {stage2_k} 个多样化候选")
+        # print(f"[RAG] Stage 2: 快速预排 - 目标筛选 {stage2_k} 个多样化候选")
         
         # 合并去重（按故障名称去重，保留最早出现的）
         unique_docs = {}
@@ -808,31 +811,34 @@ if __name__ == "__main__":
     kb = FaultDiagnosisKnowledgeBase(force_rebuild=False)  # 首次运行改为 True，后续改为 False
 
     # 测试查询 1：链路层故障（应该被优先级加成）
-    query = "网络通信很慢，不稳定"
-    current_scenario = "static_routing"
+    query = "Server 节点上的 AI 推理服务进程意外终止，导致客户端无法访问 AI 推理服务。"
+    current_scenario = "ai_inference"
     print(f"\n{'='*60}")
     print(f"[测试 Query 1]: {query}")
     print(f"[当前场景]: {current_scenario}")
     print(f"{'='*60}")
-    result_text = kb.search(query, current_scenario=current_scenario)
-    print(result_text)
+    
+    async def test():
+        result_text = await kb.search(query, current_scenario=current_scenario)
 
-    # 测试查询 2：BGP 故障（路由协议层优先级高）
-    query = "bmv2 交换机总是丢弃数据包"
-    current_scenario = "p4_star"
-    print(f"\n{'='*60}")
-    print(f"[测试 Query 2]: {query}")
-    print(f"[当前场景]: {current_scenario}")
-    print(f"{'='*60}")
-    result_text = kb.search(query, current_scenario=current_scenario)
-    print(result_text)
+    print(test())
 
-    # 测试查询 3：主机层故障（优先级基准）
-    query = "大并发请求时，AI 服务突然无响应"
-    current_scenario = "ai_inference"
-    print(f"\n{'='*60}")
-    print(f"[测试 Query 3]: {query}")
-    print(f"[当前场景]: {current_scenario}")
-    print(f"{'='*60}")
-    result_text = kb.search(query, current_scenario=current_scenario)
-    print(result_text)
+    # # 测试查询 2：BGP 故障（路由协议层优先级高）
+    # query = "bmv2 交换机总是丢弃数据包"
+    # current_scenario = "p4_star"
+    # print(f"\n{'='*60}")
+    # print(f"[测试 Query 2]: {query}")
+    # print(f"[当前场景]: {current_scenario}")
+    # print(f"{'='*60}")
+    # result_text = kb.search(query, current_scenario=current_scenario)
+    # print(result_text)
+
+    # # 测试查询 3：主机层故障（优先级基准）
+    # query = "大并发请求时，AI 服务突然无响应"
+    # current_scenario = "ai_inference"
+    # print(f"\n{'='*60}")
+    # print(f"[测试 Query 3]: {query}")
+    # print(f"[当前场景]: {current_scenario}")
+    # print(f"{'='*60}")
+    # result_text = kb.search(query, current_scenario=current_scenario)
+    # print(result_text)

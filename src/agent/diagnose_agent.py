@@ -156,79 +156,125 @@ def submit_diagnosis(fault_location: str, root_cause: str) -> str:
     return f"[DIAGNOSIS_COMPLETED] fault_location: {fault_location}; root_cause: {root_cause}"
 
 
-# 全局缓存 MCP 工具和 Client，避免每次执行图都重启进程
-_MCP_TOOLS_CACHE = None
-_MCP_CLIENT = None
-# 【新增】在类外部定义一个全局变量，作为 RAG 模型的缓存
-_GLOBAL_EXPERIENCE_RAG_CACHE = None
+# 【核心修复】改为字典缓存
+_MCP_CLIENTS = {}
+_MCP_TOOLS_CACHE = {}
+_GLOBAL_EXPERIENCE_RAG_CACHE: DiagnoseExperienceBase | None = None
+_GLOBAL_EXPERIENCE_SQL_CACHE: FaultDiagnosisKnowledgeBase | None = None  
+
+async def prewarm_diagnose_caches(lab_name: str):
+    """
+    【极速热启动】
+    在系统启动时一次性加载底层大模型、向量库及 MCP 客户端。
+    """
+    # 👇【修复】：如果全部命中缓存，直接静默返回，一句话都不打印
+    if lab_name in _MCP_TOOLS_CACHE and _GLOBAL_EXPERIENCE_RAG_CACHE is not None and _GLOBAL_EXPERIENCE_SQL_CACHE is not None:
+        return
+    
+    print("🔥 [系统预热] 正在预热诊断层工具与知识库缓存...")
+
+    async def prewarm_mcp():
+        """
+        预热 MCP 客户端
+        """
+        global _MCP_TOOLS_CACHE, _MCP_CLIENTS
+        if lab_name not in _MCP_TOOLS_CACHE:
+            mcp_server_dir = os.path.join(src_dir, "mcp_server")
+            custom_env = os.environ.copy()
+            custom_env["LAB_NAME"] = lab_name
+            custom_env.pop("PS1", None)
+            server_path = os.path.join(mcp_server_dir, "klonet_server.py")
+            
+            # 验证服务器路径是否存在
+            if not os.path.exists(server_path):
+                raise FileNotFoundError(f"MCP 服务器文件不存在: {server_path}")
+            
+            connections = {"klonet_server": {"command": sys.executable, "args": [server_path], "transport": "stdio", "env": custom_env}}
+            
+            client = MultiServerMCPClient(connections)
+            _MCP_CLIENTS[lab_name] = client
+            _MCP_TOOLS_CACHE[lab_name] = await client.get_tools()
+            print(f"   ✅ 诊断层 MCP ({lab_name}) 底层工具预加载完成")
+    
+    async def prewarm_milvus():
+        """
+        预热 Milvus 数据库
+        """
+        global _GLOBAL_EXPERIENCE_RAG_CACHE
+        if _GLOBAL_EXPERIENCE_RAG_CACHE is None:
+            _GLOBAL_EXPERIENCE_RAG_CACHE = FaultDiagnosisKnowledgeBase(force_rebuild=False)
+            print("   ✅ 诊断层 RAG 向量数据库预加载完成")
+
+    async def prewarm_sql():
+        """
+        预热 SQL 数据库
+        """
+        global _GLOBAL_EXPERIENCE_SQL_CACHE
+        if _GLOBAL_EXPERIENCE_SQL_CACHE is None:
+            _GLOBAL_EXPERIENCE_SQL_CACHE = DiagnoseExperienceBase()
+            print("   ✅ 诊断层 MySQL 经验检索系统预加载完成")
+
+    # 为了更好的错误处理和诊断，改用 return_exceptions=True
+    # 这样即使某个预热任务失败，其他任务也会继续执行
+    tasks = [prewarm_mcp(), prewarm_milvus(), prewarm_sql()]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # 检查每个预热任务的结果，报告任何异常
+    task_names = ["MCP", "Milvus", "MySQL"]
+    for task_name, result in zip(task_names, results):
+        if isinstance(result, Exception):
+            print(f"   ❌ 诊断 {task_name} 预热失败: {type(result).__name__}: {result}")
+            raise result  # 如果任何预热任务失败，抛出异常
+        # 如果result是None（成功），该任务已经打印了成功消息
 
 async def get_mcp_tools(lab_name: str):
-    """
-    获取 MCP 工具集（含全局缓存优化）
-    
-    功能：
-    1. 首次调用时启动 MCP Server 并缓存工具列表
-    2. 后续调用直接返回缓存，避免重复启动进程
-    3. 将 submit_diagnosis 工具与 MCP Server 工具合并
-    
-    Returns:
-        工具列表（包含 submit_diagnosis + klonet_server 提供的所有工具）
-    """
-    global _MCP_TOOLS_CACHE, _MCP_CLIENT
-    
-    if _MCP_TOOLS_CACHE is not None:
-        return _MCP_TOOLS_CACHE
-    
-    print("🔧 [MCP] 正在启动 MCP Server 并加载工具集...")
-    
-    mcp_server_dir = os.path.join(src_dir, "mcp_server")
-    custom_env = os.environ.copy()
-    custom_env["LAB_NAME"] = lab_name
-    
-    # 强制剔除控制台提示符环境变量
-    custom_env.pop("PS1", None)
-    custom_env.pop("PROMPT_COMMAND", None)
-
-    connections = {}
-    server_path = os.path.join(mcp_server_dir, "klonet_server.py")
-    
-    if os.path.exists(server_path):
-        connections["klonet_server"] = {
-            "command": sys.executable, 
-            "args": [server_path],
-            "transport": "stdio", 
-            "env": custom_env
-        }
-    else:
-        print(f"❌ [MCP] 未找到 MCP Server: {server_path}")
-        return [submit_diagnosis]
-    
-    _MCP_CLIENT = MultiServerMCPClient(connections)
-    server_tools = await _MCP_CLIENT.get_tools()
-    
-    # 合并自定义工具和 MCP 工具
-    _MCP_TOOLS_CACHE = [submit_diagnosis] + server_tools
-    
-    print(f"✅ [MCP] 成功加载 {len(_MCP_TOOLS_CACHE)} 个工具（含 1 个自定义 + {len(server_tools)} 个 MCP 工具）")
-    
-    return _MCP_TOOLS_CACHE
+    """【核心修复】：传入 lab_name 获取对应的工具"""
+    if lab_name not in _MCP_TOOLS_CACHE:
+        await prewarm_diagnose_caches(lab_name)
+    return _MCP_TOOLS_CACHE[lab_name]
 
 async def cleanup_mcp_client():
+    global _MCP_CLIENTS, _MCP_TOOLS_CACHE
+    _MCP_CLIENTS.clear()
+    _MCP_TOOLS_CACHE.clear()
+
+async def search_experience(lab_name: str, complaint: str, experience_count: int = 10):
     """
-    清理 MCP Client 资源（在诊断流程结束后调用）
+    【经验查询】
+    查询某种故障排除的知识点以供 Superviser 使用。
+
+    Args:
+        complaint(str): 投诉
+        lab_name(str): 实验场景
+        experience_count(int): 返回的成功经验数量，默认为 10
     """
-    global _MCP_CLIENT, _MCP_TOOLS_CACHE
-    
-    if _MCP_CLIENT is not None:
-        try:
-            # 新版本通常通过关闭底层的 transport 来清理，
-            # 如果 adapter 没有暴露 close，直接置空即可，或调用其内部 session 的清理
-            print("✅ [MCP] 正在释放 MCP 资源引用...")
-        except Exception as e:
-            print(f"⚠️ [MCP] 清理时发生错误: {e}")
-        finally:
-            _MCP_CLIENT = None
-            _MCP_TOOLS_CACHE = None
+    global _GLOBAL_EXPERIENCE_SQL_CACHE
+    if _GLOBAL_EXPERIENCE_SQL_CACHE == None:
+        await prewarm_diagnose_caches()
+    return await _GLOBAL_EXPERIENCE_SQL_CACHE.search(
+        lab_name=lab_name,  
+        keyword=complaint, 
+        limit=experience_count
+    )
+
+async def search_knowledge(fault: str, lab_name: str, knowledge_count: int = 2): 
+    """
+    【知识查询】
+    查询某种故障排除的知识点以供 Worker 使用。
+
+    Args:
+        fault(str): 故障名
+        lab_name(str): 实验场景
+        knowledge_count(int): 返回的知识点数量，默认为 2
+    """
+    global _GLOBAL_EXPERIENCE_RAG_CACHE
+    if _GLOBAL_EXPERIENCE_RAG_CACHE == None:
+        await _GLOBAL_EXPERIENCE_RAG_CACHE
+    return await _GLOBAL_EXPERIENCE_RAG_CACHE.search(
+        query=fault,
+        current_scenario=lab_name,
+        final_k=knowledge_count
+    )
 
 
 # ==========================================
@@ -324,8 +370,6 @@ async def global_inspector_node(state: DiagnoseState):
     }
 
 
-
-
 async def experience_planner_node(state: DiagnoseState):
     """
     【经验规划智能体】
@@ -342,48 +386,41 @@ async def experience_planner_node(state: DiagnoseState):
     print("📚 [Experience Planner] 正在提取诊断经验...")
     print("="*60)
     
-    # 1. 从 MySQL 提取成功经验
-    print("🔍 [MySQL] 正在检索历史成功经验...")
-    mysql_db = DiagnoseExperienceBase()
+    global _GLOBAL_EXPERIENCE_RAG_CACHE, _GLOBAL_EXPERIENCE_SQL_CACHE
+    # 事件循环并发查询 SQL 和 Milvus
+    print("🔍 [MySQL + Milvus] 正在检索历史成功经验和固定诊断手册...")
+    tasks = [search_experience(state["lab_name"], complaint=f"{state['problem_info']} {state['fault_symptom']}", experience_count=5),
+             search_knowledge(fault=state["expected_fault"], lab_name=state["lab_name"], knowledge_count=5)]
     
+    # 1. 从 MYSQL 提取成功经验
     # 构建查询关键词：用户投诉 + 故障表现
-    search_keyword = f"{state['problem_info']} {state['fault_symptom']}"
-    
-    mysql_experience = await mysql_db.search(
-        lab_name=state["lab_name"],
-        keyword=search_keyword,
-        limit=5  # 最多返回 10 条不重复根因的经验
-    )
-    
-    # 2. 从 Milvus 提取固定经验
-    print("🔍 [Milvus] 正在检索固定诊断手册...")
-    global _GLOBAL_EXPERIENCE_RAG_CACHE # 全局缓存
-    if _GLOBAL_EXPERIENCE_RAG_CACHE == None: # 如果为空
-        _GLOBAL_EXPERIENCE_RAG_CACHE = FaultDiagnosisKnowledgeBase(force_rebuild=False)
+    # search_keyword = f"{state['problem_info']} {state['fault_symptom']}"
+    # mysql_experience = await _GLOBAL_EXPERIENCE_SQL_CACHE.search(
+    #     lab_name=state["lab_name"],
+    #     keyword=search_keyword,
+    #     limit=5  # 最多返回 10 条不重复根因的经验
+    # )
+    # # 2. 从 Milvus 提取固定经验
+    # print("🔍 [Milvus] 正在检索固定诊断手册...")
+    # milvus_experience = _GLOBAL_EXPERIENCE_RAG_CACHE.search(
+    #     query=state["problem_info"],
+    #     current_scenario=state["lab_name"],
+    #     stage1_k=20,
+    #     stage2_k=10,
+    #     final_k=5,
+    #     enable_adaptive=True
+    # )
+    # # 3. 拼接经验
+    # def truncate_text(text, max_len=2000):
+    #         return text[:max_len] + "..." if len(text) > max_len else text
 
-    milvus_kb = _GLOBAL_EXPERIENCE_RAG_CACHE # 直接调用缓存
-    
-    milvus_experience = milvus_kb.search(
-        query=state["problem_info"],
-        current_scenario=state["lab_name"],
-        stage1_k=20,
-        stage2_k=10,
-        final_k=5,
-        enable_adaptive=True
-    )
-    
-    # 3. 拼接经验
-    def truncate_text(text, max_len=2000):
-            return text[:max_len] + "..." if len(text) > max_len else text
-
-    clean_mysql = truncate_text(mysql_experience, 3000)
-    clean_milvus = truncate_text(milvus_experience, 3000)
+    clean_mysql, clean_milvus = await asyncio.gather(*tasks)
 
     knowledge_context = f"""
-    【历史成功经验 (精简)】:
+    【历史成功经验】:
     {clean_mysql}
 
-    【固定诊断手册 (精简)】:
+    【固定诊断手册】:
     {clean_milvus}
     """
     
@@ -438,7 +475,11 @@ async def diagnosis_expert_node(state: DiagnoseState):
 
     # 3. 加载工具和模型
     llm = load_model(backend_model=state["backend_model"])
-    tools = await get_mcp_tools(state["lab_name"])
+    mcp_tools = await get_mcp_tools(state["lab_name"])
+    
+    # 【核心修复 1】：将本地定义的 submit_diagnosis 强行合并进工具列表
+    tools = mcp_tools + [submit_diagnosis]
+    
     llm_with_tools = llm.bind_tools(tools)
     
     # 拼装系统提示词
@@ -506,9 +547,14 @@ async def diagnosis_expert_node(state: DiagnoseState):
 
 【注意事项】
 - 切勿一次性调用大量不相关工具，应按逻辑链条逐步推进
-- 同样的工具+参数不要调用两次以上
+- 同样的工具+参数不要调用两次以上，同样的工具+参数不要调用两次以上，同样的工具+参数不要调用两次以上！否则你会直接判零分！
 - 🚨 请保持推理过程简洁，不要重复生成已知的背景信息。如果已经有嫌疑范围，请立即调用工具进行验证。
 - 保持语言简洁！
+
+【🚨🚨🚨 终结任务强制规范（防死循环熔断机制）】
+1. 严禁重复调用！ 如果你已经调用过 `check_ai_processes` 或 `node_execute` 获取了某个节点的状态，**绝对不允许**为了“反复确认”而二次调用完全相同的命令！
+2. 立即提交！ 如果你在某一步的观察结果中，已经明确证实了某种故障的存在（例如：发现没有 AI 进程、发现路由错误、发现丢包），**你的下一个动作必须是调用 `submit_diagnosis` 工具！**
+3. 绝对不要犹豫！ 只要你心里已经得出了结论，严禁再调用任何其他工具，直接提交 JSON，否则你的任务将被判定为超时失败！
 """
     
     if state["tool_call_count"] == 0:
@@ -585,17 +631,22 @@ async def tool_filter_node(state: DiagnoseState):
     print("🛠️ [Tool Filter] 正在执行工具调用...")
     print("="*60)
     
-    tools = await get_mcp_tools(state["lab_name"])
+    mcp_tools = await get_mcp_tools(state["lab_name"])
+    
+    # 【核心修复 2】：同样将本地工具合并进来，供 tool_map 映射查找
+    tools = mcp_tools + [submit_diagnosis]
     tool_map = {t.name: t for t in tools}
     
     results = []
+
     tool_count = state["tool_call_count"]
     diagnosis_res = state.get("diagnosis_result", "")
     fault_loc = state.get("fault_location", "")
-    location_correct = False      # 【新增】默认为 False
-    attribution_correct = False   # 【新增】默认为 False
+    # 【修复 1】：继承之前的状态，防止被默认覆盖为 False
+    location_correct = state.get("location_correct", False)
+    attribution_correct = state.get("attribution_correct", False)
     usage = state.get("token_usage", {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}).copy()
-
+    
     for tc in last_msg.tool_calls:
         tool_count += 1
         tool_name = tc["name"]

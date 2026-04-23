@@ -82,9 +82,10 @@ async def main():
                 "max_steps": 100
             })
             
-            problem_info = inject_state["problem_info"]
-            expected_fault = inject_state["expected_fault"]
-            expected_location = inject_state["expected_location"]
+            # 【完美恢复：直接取字符串】
+            problem_info = inject_state.get("problem_info", "未知现象")
+            expected_fault = inject_state.get("expected_fault", "unknown")
+            expected_location = inject_state.get("expected_location", "unknown")
 
             # HIL: 抉择下一步
             choice = input("\n[HIL] 👉 请选择下一步:\n"
@@ -104,7 +105,7 @@ async def main():
         while True:
             # 提示用户选择大模型及执行次数
             diag_model = input("\n[HIL - 诊断阶段] 请输入用于诊断的 LLM 模型名 (回车默认 qwen3.5-27b): ") or "qwen3.5-27b"
-            max_steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (回车默认 100): ") or "100"
+            max_steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (回车默认 100): ") or "200"
             
             diag_result = await diagnose_fault(
                 lab_name=lab_name,

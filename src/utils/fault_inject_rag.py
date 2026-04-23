@@ -94,7 +94,7 @@ class FaultKnowledgeBase:
         self._ensure_milvus_running() # 在加载模型和连接数据库之前，先唤醒沉睡的容器
 
         # ----- 2. 加载 Embedding 模型（向量化模型）-----
-        print("[RAG] 正在加载 BGE-M3 向量化模型...")
+        # print("[RAG] 正在加载 BGE-M3 向量化模型...")
         self.embeddings = HuggingFaceEmbeddings(
             model_name="BAAI/bge-m3",            # 模型名称：北京智源的 BGE-M3，支持中英文，1024维输出
             model_kwargs={'device': 'cpu'},      # 用 CPU 推理（没有 GPU 或 GPU 不够时的选择）
@@ -103,7 +103,7 @@ class FaultKnowledgeBase:
         self.embedding_dim = 1024  # BGE-M3 模型输出的向量维度是 1024
 
         # ----- 3. 加载 Reranker 模型（重排模型）-----
-        print("[RAG] 正在加载 BGE-Reranker-v2-M3 重排模型...")
+        # print("[RAG] 正在加载 BGE-Reranker-v2-M3 重排模型...")
         self.cross_encoder = CrossEncoder(
             model_name_or_path="BAAI/bge-reranker-v2-m3",  # 北京智源的重排模型，专门给文档相关性打分
             device="cpu",       # 用 CPU 推理
@@ -115,7 +115,7 @@ class FaultKnowledgeBase:
         
         # ----- 5. 连接 Milvus 数据库并初始化 -----
         self.docs = []  # 初始化空列表，不论是从 MD 解析还是从 DB 拉取，最终都在这
-        print(f"[RAG] 正在连接企业级 Milvus 数据库 ({self.db_uri})...")
+        # print(f"[RAG] 正在连接企业级 Milvus 数据库 ({self.db_uri})...")
         self.client = MilvusClient(uri=self.db_uri)
         
         # 调用智能初始化方法：判断是建新表还是读取旧表恢复数据
@@ -125,30 +125,30 @@ class FaultKnowledgeBase:
         """
         一次性将网络领域黑话词典加载进内存，避免运行时冷启动开销
         """
-        print("[RAG] 正在预热 jieba NLP 模型与专有名词库...")
+        # print("[RAG] 正在预热 jieba NLP 模型与专有名词库...")
         for word in DOMAIN_WORDS:
             jieba.add_word(word)
         # 强行切分一个词，触发 jieba 内部大字典的懒加载机制
         _ = jieba.lcut("故障注入引擎热加载完成")
-        print("[RAG] NLP 模型预热完成！")
+        # print("[RAG] NLP 模型预热完成！")
 
     def _ensure_milvus_running(self):
         """
         Docker 状态检查与自启守护
         """
-        print("[RAG] 正在检查 Milvus 底层容器状态...")
+        # print("[RAG] 正在检查 Milvus 底层容器状态...")
         try:
             result = subprocess.run(
                 ["docker", "inspect", "-f", "{{.State.Running}}", "milvus-standalone"],
                 capture_output=True, text=True
             )
             if "true" not in result.stdout.lower():
-                print("[RAG] 发现 Milvus 容器组未运行，正在自动唤醒...")
+                # print("[RAG] 发现 Milvus 容器组未运行，正在自动唤醒...")
                 subprocess.run(
                     ["docker", "start", "milvus-etcd", "milvus-minio", "milvus-standalone"], 
                     check=True
                 )
-                print("[RAG] 容器组已拉起，正在等待 19530 端口服务就绪...")
+                # print("[RAG] 容器组已拉起，正在等待 19530 端口服务就绪...")
                 port_ready = False
 
                 # 轮询探测端口 (polling)
@@ -156,26 +156,31 @@ class FaultKnowledgeBase:
                     try:
                         with socket.create_connection(("127.0.0.1", 19530), timeout=1):
                             port_ready = True
-                            print("[RAG] 端口 19530 通信握手成功，Milvus 服务已完全就绪！")
+                            # print("[RAG] 端口 19530 通信握手成功，Milvus 服务已完全就绪！")
                             break
                     except OSError:
                         time.sleep(1)
-                        print(f"  ... 内部服务初始化中 ({i+1}/20)")
+                        # print(f"  ... 内部服务初始化中 ({i+1}/20)")
+                        pass
                 if not port_ready:
-                    print("[RAG] ⚠️ 警告：等待 Milvus 端口就绪超时，接下来的连接可能会失败。")
+                    # print("[RAG] ⚠️ 警告：等待 Milvus 端口就绪超时，接下来的连接可能会失败。")
+                    pass
             else:
-                print("[RAG] Milvus 容器组运行正常，无需唤醒。")
+                # print("[RAG] Milvus 容器组运行正常，无需唤醒。")
+                pass
         except FileNotFoundError:
-            print("[RAG] ❌ 错误：未找到 docker 命令，请确认宿主机环境。")
+            # print("[RAG] ❌ 错误：未找到 docker 命令，请确认宿主机环境。")
+            pass
         except subprocess.CalledProcessError as e:
-            print(f"[RAG] ❌ 启动 Docker 容器失败，错误码 {e.returncode}。")
+            # print(f"[RAG] ❌ 启动 Docker 容器失败，错误码 {e.returncode}。")
+            pass
 
     def _load_and_split_docs(self):
         """
         【文档切分 + 上下文增强】
         此处仅在 force_rebuild=True 或首次建库时被调用
         """
-        print("[RAG] 正在读取本地 Markdown 文档并进行语义切块...")
+        # print("[RAG] 正在读取本地 Markdown 文档并进行语义切块...")
         with open(self.md_path, "r", encoding="utf-8") as f:
             md_content = f.read()
 
@@ -198,7 +203,7 @@ class FaultKnowledgeBase:
         """
         if self.client.has_collection(collection_name=self.collection_name):
             if force_rebuild:
-                print(f"[RAG] 收到强制重建指令，正在摧毁旧集合 '{self.collection_name}'...")
+                # print(f"[RAG] 收到强制重建指令，正在摧毁旧集合 '{self.collection_name}'...")
                 
                 # # 👇👇👇 【重点提示】这是由于表结构变更，DROP 旧页表结构的代码行！👇👇👇
                 self.client.drop_collection(collection_name=self.collection_name)
@@ -206,10 +211,10 @@ class FaultKnowledgeBase:
                 
             else:
                 # 【架构升级】不重建时，彻底抛弃本地 MD 读取，直接用数据库做全量内存还原！
-                print(f"[RAG] 检测到集合 '{self.collection_name}' 已存在且未要求重建，准备从数据库热加载！")
+                # print(f"[RAG] 检测到集合 '{self.collection_name}' 已存在且未要求重建，准备从数据库热加载！")
                 self.client.load_collection(collection_name=self.collection_name)
                 
-                print("[RAG] 正在从 Milvus 读取并恢复所有历史原文与 NLP 分词缓存...")
+                # print("[RAG] 正在从 Milvus 读取并恢复所有历史原文与 NLP 分词缓存...")
                 # 通过 filter id >= 0 拉取全量实体 (Milvus auto_id 生成的数字均为正数)
                 results = self.client.query(
                     collection_name=self.collection_name,
@@ -229,13 +234,13 @@ class FaultKnowledgeBase:
                 
                 # 瞬间构建 BM25 模型，完美绕过重构开销
                 self.bm25_model = BM25Plus(tokenized_corpus)
-                print(f"[RAG] 成功从数据库缓存还原了 {len(self.docs)} 个知识块，检索系统已就绪！")
+                # print(f"[RAG] 成功从数据库缓存还原了 {len(self.docs)} 个知识块，检索系统已就绪！")
                 return  # 直接返回，跳过后面的建表和插数据逻辑
 
         # ==============================================
         # 执行到此处，说明是【首次建库】或【被 Drop 后重建】
         # ==============================================
-        print(f"[RAG] 正在创建全新 Schema 并准备从零写入数据...")
+        # print(f"[RAG] 正在创建全新 Schema 并准备从零写入数据...")
         
         # 1. 因为是新建，必须先把本地的 Markdown 读取到 self.docs 中
         self._load_and_split_docs()
@@ -264,7 +269,7 @@ class FaultKnowledgeBase:
         """
         把文档向量化、词频化并写入 Milvus 数据库
         """
-        print(f"[RAG] 正在生成语义向量与词元划分，并全量同步到 Milvus...")
+        # print(f"[RAG] 正在生成语义向量与词元划分，并全量同步到 Milvus...")
         
         texts = [doc.page_content for doc in self.docs]
         
@@ -287,9 +292,9 @@ class FaultKnowledgeBase:
             
         self.client.insert(collection_name=self.collection_name, data=data)
         self.client.load_collection(collection_name=self.collection_name)
-        print("[RAG] 数据库首次同步写入彻底完成！")
+        # print("[RAG] 数据库首次同步写入彻底完成！")
 
-    def search(self, query: str, ensemble_k: int = 10, final_k: int = 2) -> str:
+    async def search(self, query: str, ensemble_k: int = 10, final_k: int = 2) -> str:
         """
         双路召回 + 重排 的核心搜索方法
         """

@@ -15,7 +15,7 @@ def load_model(backend_model: str = "gemini-3-flash-preview") -> BaseChatModel:
     if backend_model in ["qwen3.5-27b"]:
         llm = ChatOpenAI(
             model=backend_model,
-            base_url=os.getenv("BASE_URL"),
+            base_url=os.getenv("MEDIUM_URL"),
             api_key="any",
             temperature=0 # 排障任务必须为0，保证工具调用稳定性
         )
@@ -33,11 +33,11 @@ def load_model(backend_model: str = "gemini-3-flash-preview") -> BaseChatModel:
         http_client = httpx.Client(proxy=proxy_url) if proxy_url else None
 
         llm = ChatOpenAI(
-            model=backend_model,
+            model="gemini-3-flash-preview", # 
             base_url=base_url,
             api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0,
-            timeout=20, # 👈 关键修复：设置超时，拒绝无限卡死！
+            timeout=60, # 👈 关键修复：设置超时，拒绝无限卡死！
             http_client=http_client # 👈 关键修复：接管底层网络请求，确保能走通代理
         )
     else:

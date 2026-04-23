@@ -1,0 +1,10 @@
+{
+    "python.analysis.extraPaths": [
+        "./tmx/Nika/src/utils",
+        "./tmx/Nika/src/agent",
+        "./tmx/Nika/src"
+    ],
+    "python.autoComplete.extraPaths": [
+        "./src/agent"
+    ]
+}
