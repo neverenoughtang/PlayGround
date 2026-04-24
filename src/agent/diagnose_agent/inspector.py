@@ -165,8 +165,8 @@ async def global_inspector(state: DiagnoseState):
         return {"inspector_result": f"巡检采集异常: {e}"}
 
     # 使用 Small 模型进行快速摘要提取，剔除正常冗余信息
-    print("🧠 [Inspector] 正在调用 Qwen-Small 压缩底层日志...")
-    llm = load_model(backend_model="qwen3.5-small")
+    print("🧠 [Inspector] 正在压缩底层日志...")
+    llm = load_model(backend_model="qwen3.5-medium")
     prompt = f"网络场景：{state['lab_name']}。请基于以下全网状态快照，**全面**总结出明显的异常点(如 ping不通、网卡DOWN、路由邻居卡在Idle等)。只输出纯粹的异常结论。\n\n{raw_info}"
     
     try:

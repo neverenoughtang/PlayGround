@@ -9,10 +9,10 @@ from .tools import create_worker_tools
 async def worker_think_node(state: WorkerState):
     """
     【思考决策】
-    Worker 为高并发节点，统一调度 qwen3.5-small，保证速度。
+    Worker 为高并发节点，统一调度，保证速度。
     """
     tools = await create_worker_tools(state["lab_name"])
-    llm = load_model(backend_model="qwen3.5-small").bind_tools(tools)
+    llm = load_model(backend_model="qwen3.5-medium").bind_tools(tools)
 
     if not state["messages"]:
         sys_prompt = f"""你是一名网络排障专家，严格依照下方资料，验证网络中是否存在指派的故障。
@@ -207,7 +207,7 @@ async def worker_tool_filter_node(state: WorkerState):
         tokens = {"in": 0, "out": 0}
         
         if len(raw_str) > 100: 
-            llm = load_model(backend_model="qwen3.5-small")
+            llm = load_model(backend_model="qwen3.5-medium")
             prompt = f"""你的职责是总结提炼网络故障诊断 agent 调用工具的输出，防止上下文太长。
     【当前网络拓扑】
     {state["netenv_info"]}

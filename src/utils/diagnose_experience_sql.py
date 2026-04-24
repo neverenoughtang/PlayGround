@@ -367,20 +367,33 @@ if __name__ == "__main__":
         # 注意：__init__ 未定义 backend_model，这里去掉无效参数
         DB = DiagnoseExperienceBase()
         
-        # # 1. 打印全部case
-        # await DB.print_all_cases()
-
         # 2. 查询 1 次 Case
         # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
         query_result = await DB.search(
-            lab_name="ospf_enterprise", 
-            keyword="某些主机断网", 
-            limit=10
+            lab_name="ai_inference", 
+            keyword="AI推理服务卡顿", 
+            limit=15
         )
         print("\n👇 返回给 Agent 的 System Prompt 补充内容：\n")
         print(query_result)
         print("="*40)
 
+        # 2. 删除
+        await DB.delete_case_by_id(59)
+        await DB.delete_case_by_id(60)
+        await DB.delete_case_by_id(61)
+        await DB.delete_case_by_id(62)
+        await DB.delete_case_by_id(63)
+        await DB.delete_case_by_id(64)
+        await DB.delete_case_by_id(65)
+        await DB.delete_case_by_id(66)
+        await DB.delete_case_by_id(67)
+        await DB.delete_case_by_id(68)
+        await DB.delete_case_by_id(69)
+        await DB.delete_case_by_id(70)
+
+        # 3. 打印全部case
+        await DB.print_all_cases()
 
     # 运行异步测试主函数
     asyncio.run(test())
