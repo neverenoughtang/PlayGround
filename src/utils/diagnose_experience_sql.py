@@ -108,7 +108,7 @@ class DiagnoseExperienceBase:
         【写时分词】
         将经验进行分词，再写入数据库，提升效率
         """
-        print("💾 [Summary Agent] 正在将经验持久化至 MySQL...")
+        # print("💾 [Summary Agent] 正在将经验持久化至 MySQL...")
         
         # 【效率优化点 2：空间换时间（写时分词）】
         # 在数据写入数据库前，提前切好词，统一转小写，并用空格拼接成字符串存入数据库。
@@ -132,7 +132,7 @@ class DiagnoseExperienceBase:
             # 提交
             connection.commit()
 
-            print("🎉 [Summary Agent] 成功将本次排障经验录入 MySQL 经验池！")
+            # print("🎉 [Summary Agent] 成功将本次排障经验录入 MySQL 经验池！")
             return True
             
         except Exception as e:
@@ -208,7 +208,7 @@ class DiagnoseExperienceBase:
                 return "当前场景下，未能检索到与该投诉表象高度相关的历史经验。"
 
             # 7. 组装输出
-            memory_str = f"【历史相关排障经验参考 (场景: {lab_name})】\n"
+            memory_str = f" 场景: {lab_name} \n"
             for idx, case in enumerate(unique_cases, 1):
                 memory_str += f"--- 经验 Case {idx} ---\n"
                 memory_str += f"- 历史现象: {case['fuzzy_complaint']}\n"
@@ -314,10 +314,9 @@ if __name__ == "__main__":
         # 注意：__init__ 未定义 backend_model，这里去掉无效参数
         DB = DiagnoseExperienceBase()
         
-        # 1. 打印全部case
-        await DB.print_all_cases()
 
-        # # 2. 查询 1 次 Case
+
+        # # 1. 查询 1 次 Case
         # # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
         # query_result = await DB.search(
         #     lab_name="ai_inference", 
@@ -328,9 +327,15 @@ if __name__ == "__main__":
         # print(query_result)
         # print("="*40)
 
-        # # 3. 删除
+        # 2. 删除
         # await DB.delete_case_by_id(59)
-        # await DB.delete_case_by_id(60)
+        await DB.delete_case_by_id(64)
+        await DB.delete_case_by_id(65)
+        await DB.delete_case_by_id(66)
+        await DB.delete_case_by_id(67)
+
+        # 3. 打印全部case
+        await DB.print_all_cases()
 
     # 运行异步测试主函数
     asyncio.run(test())

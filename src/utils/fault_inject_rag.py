@@ -373,21 +373,17 @@ class FaultKnowledgeBase:
 # 第五部分：测试入口
 # ==========================================
 if __name__ == "__main__":
+    import asyncio
     # 既然表结构变了，第一次测试时将 force_rebuild=True 激活即可走到重建逻辑
     kb = FaultKnowledgeBase(force_rebuild=True) 
 
     query = "默认路由有问题"
     print(f"\n[测试 Query]: {query}")
     print("正在执行领域词加强混合检索 + 交叉重排，请稍候...\n")
-    result_text = kb.search(query)
+
+    async def test():
+        result_text = await kb.search(query)
+        return result_text
 
     print("============== 最终发给 Agent 的内容 ==============")
-    print(result_text)
-
-    query = "通信很不稳定！"
-    print(f"\n[测试 Query]: {query}")
-    print("正在执行领域词加强混合检索 + 交叉重排，请稍候...\n")
-    result_text = kb.search(query)
-
-    print("============== 最终发给 Agent 的内容 ==============")
-    print(result_text)
+    print(asyncio.run(test()))

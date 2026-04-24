@@ -4,15 +4,502 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nika Agent UI</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1f2937', 900: '#111827', 950: '#030712' } } } }
         }
     </script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
     <style>
+        [v-cloak] { display: none; } 
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.8); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 打字机光标闪烁动画 */
+        .typing-cursor {
+            display: inline-block; width: 6px; height: 16px;
+            background-color: currentColor; margin-left: 2px;
+            vertical-align: middle; animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        
+        /* 表单锁死状态 */
+        .disabled-bg { 
+            opacity: 0.5; cursor: not-allowed; pointer-events: none; transition: all 0.3s ease;
+        }
+        .font-terminal { font-family: Consolas, "Courier New", monospace; }
+
+        /* ========================================================= */
+        /* 【极简排版 + 内容隔离】：防止被 JSON 撑爆的核心 CSS           */
+        /* ========================================================= */
+        
+        /* 1. 基础容器：普通文字超长时，允许在任意地方物理折断，不许撑长 */
+        .markdown-body {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            word-wrap: break-word;
+        }
+
+        /* 标题：冷静克制，只依赖大小和透明度 */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 { 
+            font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; 
+        }
+        .markdown-body h1 { font-size: 1.5em; }
+        .markdown-body h2 { font-size: 1.25em; border-bottom: 1px solid rgba(128, 128, 128, 0.2); padding-bottom: 0.3em; }
+        .markdown-body h3 { font-size: 1.1em; opacity: 0.9; }
+        
+        .markdown-body p { margin-bottom: 0.75em; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+        
+        /* ========================================================= */
+        /* 2. 【核心隔离区】：代码块 / JSON / 数组的横向滚动护城河       */
+        /* ========================================================= */
+        .markdown-body pre { 
+            display: block;
+            width: 100%;
+            /* 保证内容不被截断，而是生成一个优雅的左右拖动条 */
+            overflow-x: auto; 
+            /* 保留后端的格式化排版，确保 JSON 一行行层级分明地陈列 */
+            white-space: pre; 
+            box-sizing: border-box;
+            background: rgba(128, 128, 128, 0.1); 
+            padding: 10px 14px; 
+            border-radius: 6px; 
+            margin: 0.75em 0; 
+        }
+        
+        /* 取消代码块内部标签的换行限制，让父级 pre 去控制滚动 */
+        .markdown-body pre code { 
+            background: transparent; 
+            padding: 0; 
+            white-space: inherit; 
+            word-break: normal; 
+        }
+
+        /* 内联代码块（行内命令）：允许在句子中自然折行 */
+        .markdown-body code { 
+            background: rgba(128, 128, 128, 0.15); 
+            padding: 2px 5px; 
+            border-radius: 4px; 
+            font-family: Consolas, "Courier New", monospace; 
+            font-size: 0.9em; 
+            white-space: pre-wrap;  
+            word-break: break-all;  
+        }
+        
+        /* 3. 【核心隔离区】：表格过长的横向滚动 */
+        .markdown-body table { 
+            display: block; 
+            width: 100%; 
+            max-width: 100%; 
+            overflow-x: auto; /* 表格列数过多也会触发拖动条 */
+            border-collapse: collapse; 
+            margin: 1em 0; 
+            font-size: 0.95em; 
+        }
+        .markdown-body th, .markdown-body td { 
+            border: 1px solid rgba(128, 128, 128, 0.2); 
+            padding: 8px 12px; text-align: left; 
+        }
+        .markdown-body th { 
+            font-weight: bold; background: rgba(128, 128, 128, 0.05); 
+        }
+        
+        .markdown-body blockquote { 
+            border-left: 4px solid rgba(128, 128, 128, 0.4); 
+            padding-left: 1em; margin: 0.75em 0; opacity: 0.8; font-style: italic; 
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition-colors duration-300 antialiased overflow-hidden">
+    <div id="app" class="flex h-screen w-full" v-cloak>
+        
+        <aside class="w-64 flex-shrink-0 bg-gray-50 dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors duration-300 relative z-20">
+            <div class="p-3">
+                <button @click="createNewChat" :disabled="isInputLocked" class="w-full flex items-center gap-3 px-3 py-3 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="h-4 w-4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span class="text-sm">新对话</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-1">
+                <div v-for="chat in chats" :key="chat.id" 
+                     @click="selectChat(chat)"
+                     class="group relative flex flex-col gap-1 px-3 py-3 rounded-md cursor-pointer transition-colors text-sm"
+                     :class="currentConvId === chat.id ? 'bg-gray-200 dark:bg-gray-800 font-bold border-l-4 border-slate-500' : 'hover:bg-gray-100 dark:hover:bg-gray-900 border-l-4 border-transparent'">
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap" :class="chat.state === 'DONE' ? 'text-gray-500 font-normal' : ''">
+                            {{ chat.title }}
+                        </div>
+                        
+                        <button @click.stop="deleteChat(chat.id)" title="删除对话" class="opacity-0 group-hover:opacity-100 text-blue-800 dark:text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0">
+                            <svg stroke="currentColor" fill="none" stroke-width="1.5" viewBox="0 0 24 24" class="h-[18px] w-[18px]">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <span class="text-[10px] font-bold tracking-wide" :class="getStateColor(chat.state)">
+                        {{ chat.state }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="p-3 border-t border-gray-200 dark:border-gray-800">
+                <button @click="toggleTheme" class="w-full flex items-center gap-3 px-3 py-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <template v-if="isDarkMode">
+                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="h-4 w-4"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                        <span class="text-sm font-medium">切换至明亮模式</span>
+                    </template>
+                    <template v-else>
+                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="h-4 w-4"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <span class="text-sm font-medium">切换至暗黑模式</span>
+                    </template>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full bg-white dark:bg-gray-800 relative z-10">
+            
+            <header class="flex items-center relative h-16 px-6 border-b border-gray-200 dark:border-gray-800 shrink-0 bg-gray-50 dark:bg-gray-900 z-20">
+                <div class="text-2xl font-black tracking-wider text-gray-800 dark:text-gray-100">Nika</div>
+                <div class="absolute left-1/2 -translate-x-1/2 flex items-center text-sm font-mono font-bold text-gray-500 dark:text-gray-400">
+                    <span>{{ headerInfo }}</span>
+                </div>
+            </header>
+
+            <div id="messages-container" class="flex-1 overflow-y-auto pb-32 pt-6">
+                <template v-if="currentChatMessages.length > 0">
+                    <div v-for="(msg, index) in currentChatMessages" :key="index"
+                         class="w-full flex px-4 md:px-8 py-3"
+                         :class="msg.role === 'assistant' ? 'justify-start' : 'justify-end'">
+                        
+                        <div class="grid gap-3 md:gap-4 max-w-[95%] md:max-w-[85%]"
+                             :class="msg.role === 'assistant' ? 'grid-cols-[auto_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_auto]'">
+                             
+                            <template v-if="msg.role === 'assistant'">
+                                <div class="flex flex-col relative items-center pt-1 w-9">
+                                    <div class="w-9 h-9 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-cyan-700">
+                                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="text-white h-5 w-5"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 text-[14px] px-5 py-3.5 shadow-sm border markdown-body bg-gray-50 dark:bg-[#1e1e1e] text-gray-800 dark:text-gray-300 rounded-2xl rounded-tl-sm border-gray-200 dark:border-gray-700 font-terminal"
+                                     v-html="renderMarkdown(msg.content, msg.isTyping)">
+                                </div>
+                            </template>
+
+                            <template v-else>
+                                <div class="min-w-0 text-[14px] px-5 py-3.5 shadow-sm border markdown-body bg-gray-100 dark:bg-[#374151] text-gray-800 dark:text-gray-100 rounded-2xl rounded-tr-sm border-gray-300 dark:border-gray-600"
+                                     v-html="renderMarkdown(msg.content, msg.isTyping)">
+                                </div>
+                                <div class="flex flex-col relative items-center pt-1 w-9">
+                                    <div class="w-9 h-9 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-slate-500">
+                                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="text-white h-5 w-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    </div>
+                                </div>
+                            </template>
+
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-white via-white dark:from-gray-800 dark:via-gray-800 to-transparent pt-6 pb-6 px-4 md:px-8">
+                <div class="max-w-5xl mx-auto flex flex-col relative">
+                    <form @submit.prevent="sendMessage" 
+                          class="relative flex flex-col w-full px-3 py-3 rounded-2xl border border-black/10 dark:border-gray-700 bg-white dark:bg-gray-700 shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.15)] transition-all"
+                          :class="isInputLocked ? 'disabled-bg' : 'focus-within:ring-2 focus-within:ring-slate-500/50'">
+                        
+                        <textarea v-model="inputText" 
+                                  @keydown.enter.prevent="sendMessage"
+                                  :disabled="isInputLocked"
+                                  rows="1" 
+                                  class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-10 focus:ring-0 focus-visible:ring-0 text-sm md:text-[15px] max-h-48 overflow-y-auto hide-scrollbar outline-none" 
+                                  :placeholder="getPlaceholder()" 
+                                  style="min-height: 24px; max-height: 200px;"></textarea>
+                        
+                        <button type="submit" 
+                                :disabled="!inputText.trim() || isInputLocked"
+                                class="absolute right-2 bottom-2 p-1.5 rounded-xl transition-colors disabled:opacity-40"
+                                :class="inputText.trim() && !isInputLocked ? 'bg-slate-700 text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500' : 'bg-gray-200 text-gray-400 dark:bg-gray-600 dark:text-gray-400'">
+                            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="h-5 w-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </form>
+                    <div class="text-xs text-center text-gray-400 dark:text-gray-500 mt-3 font-medium">
+                        基于 Klonet 虚拟网络仿真器的网络故障诊断智能体全流程测试平台
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, nextTick, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const chats = ref([]);
+                const currentConvId = ref(null);
+                const currentChatMessages = ref([]);
+                const currentState = ref(null);
+                const contextData = ref({});
+                
+                const isExecuting = ref(false); 
+                const inputText = ref('');
+                const isDarkMode = ref(true);
+
+                const charQueue = ref(""); 
+                let ws = null;
+
+                // 【锁】：只要处于计算、打字、结束任意一态，输入框物力断绝鼠标事件
+                const isInputLocked = computed(() => {
+                    return currentState.value === 'DONE' || isExecuting.value || charQueue.value.length > 0;
+                });
+
+                onMounted(async () => { 
+                    await loadHistory(); 
+                    createNewChat(); 
+                    startTypewriter(); 
+                });
+
+                const renderMarkdown = (content, isTyping) => {
+                    if (!content && !isTyping) return "";
+                    
+                    let html = "";
+                    if (typeof marked !== 'undefined') {
+                        html = marked.parse(content || "");
+                    } else {
+                        html = content || "";
+                    }
+
+                    if (isTyping) {
+                        const cursorHtml = '<span class="typing-cursor"></span>';
+                        if (html.endsWith('</p>\n')) {
+                            html = html.replace(/<\/p>\n$/, `${cursorHtml}</p>\n`);
+                        } else {
+                            html += cursorHtml;
+                        }
+                    }
+                    return html;
+                };
+
+                const getStateColor = (state) => {
+                    const colors = {
+                        'AWAITING_DEPLOY': 'text-blue-600 dark:text-blue-400',
+                        'AWAITING_INJECT': 'text-cyan-600 dark:text-cyan-500',
+                        'AWAITING_DIAGNOSE': 'text-amber-600 dark:text-amber-500',
+                        'AWAITING_EVAL': 'text-purple-600 dark:text-purple-400',
+                        'DONE': 'text-emerald-600 dark:text-emerald-500'
+                    };
+                    return colors[state] || 'text-gray-500';
+                };
+
+                const getPlaceholder = () => {
+                    if (currentState.value === 'DONE') return "✅ 测试全流程已结束，终端锁定。请开启新对话。";
+                    if (isInputLocked.value) return "⏳ 正在执行指令或打印终端日志...";
+                    return "请输入指令内容 (回车发送)...";
+                };
+
+                const headerInfo = computed(() => {
+                    const lab = contextData.value?.lab_name || '未部署场景';
+                    const fault = contextData.value?.expected_fault || '未注入故障';
+                    return `【场景】${lab}  |  【故障】${fault}  |  【状态】${currentState.value || '初始化'}`;
+                });
+
+                const loadHistory = async () => {
+                    try {
+                        const res = await fetch('/api/conversations');
+                        chats.value = await res.json();
+                    } catch (e) {}
+                };
+
+                const scrollToBottom = async () => {
+                    await nextTick();
+                    const el = document.getElementById('messages-container');
+                    if(el) el.scrollTop = el.scrollHeight;
+                };
+
+                const createNewChat = async () => {
+                    if (isInputLocked.value) return; 
+
+                    if (chats.value.length > 0 && chats.value[0].title === "新对话" && chats.value[0].state === 'AWAITING_DEPLOY') {
+                        if (currentConvId.value !== chats.value[0].id) {
+                            selectChat(chats.value[0]);
+                        }
+                        return; 
+                    }
+
+                    isExecuting.value = true;
+                    charQueue.value = "";
+                    try {
+                        const res = await fetch('/api/conversations', { method: 'POST' });
+                        const data = await res.json();
+                        await loadHistory();
+                        await selectChat({ id: data.conversation_id, state: 'AWAITING_DEPLOY' });
+                    } catch (e) {}
+                    isExecuting.value = false;
+                };
+
+                const selectChat = async (chatObj) => {
+                    try {
+                        currentConvId.value = chatObj.id;
+                        currentState.value = chatObj.state;
+                        isExecuting.value = false;
+                        inputText.value = "";
+                        charQueue.value = ""; 
+                        
+                        const res = await fetch(`/api/conversations/${chatObj.id}`);
+                        const data = await res.json();
+                        currentChatMessages.value = data.messages || [];
+                        contextData.value = data.context || {};
+                        await scrollToBottom();
+                        
+                        setupWebSocket(chatObj.id);
+                    } catch(e){}
+                };
+
+                const deleteChat = async (id) => {
+                    if(!confirm("确定彻底删除此流程序列及释放可能的残余拓扑？")) return;
+                    
+                    const idx = chats.value.findIndex(c => c.id === id);
+                    if (idx !== -1) chats.value.splice(idx, 1);
+
+                    if (currentConvId.value === id) {
+                        if (chats.value.length > 0) {
+                            selectChat(chats.value[0]);
+                        } else {
+                            createNewChat();
+                        }
+                    }
+                    
+                    fetch(`/api/conversations/${id}`, { method: 'DELETE' });
+                };
+
+                const setupWebSocket = (conv_id) => {
+                    if (ws) { ws.close(); ws = null; }
+                    ws = new WebSocket(`ws://${window.location.host}/ws/${conv_id}`);
+                    
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === "stream") {
+                            charQueue.value += data.content;
+                        } 
+                        else if (data.type === "prompt") {
+                            currentChatMessages.value.push({ role: 'assistant', content: data.content, isTyping: false });
+                            fetch(`/api/conversations/${conv_id}`).then(r => r.json()).then(d => {
+                                currentState.value = d.state;
+                                contextData.value = d.context || {};
+                            });
+                            scrollToBottom();
+                        }
+                        else if (data.type === "done") {
+                            isExecuting.value = false;
+                            loadHistory(); 
+                            fetch(`/api/conversations/${conv_id}`).then(r => r.json()).then(d => {
+                                currentState.value = d.state;
+                                contextData.value = d.context || {};
+                            });
+                            
+                            const lastMsg = currentChatMessages.value[currentChatMessages.value.length - 1];
+                            if (lastMsg) lastMsg.isTyping = false;
+                        }
+                    };
+                };
+
+                const startTypewriter = () => {
+                    setInterval(() => {
+                        if (charQueue.value.length > 0) {
+                            const lastMsg = currentChatMessages.value[currentChatMessages.value.length - 1];
+                            if (lastMsg && lastMsg.role === 'assistant') {
+                                const chunkSize = charQueue.value.length > 300 ? 50 : 2;
+                                lastMsg.content += charQueue.value.substring(0, chunkSize);
+                                charQueue.value = charQueue.value.substring(chunkSize);
+                                scrollToBottom();
+                            } else {
+                                charQueue.value = ""; 
+                            }
+                        }
+                    }, 20); 
+                };
+
+                const sendMessage = async () => {
+                    const text = inputText.value.trim();
+                    if (!text || isInputLocked.value) return;
+
+                    currentChatMessages.value.push({ role: 'user', content: text });
+                    inputText.value = '';
+                    isExecuting.value = true; 
+
+                    currentChatMessages.value.push({ role: 'assistant', content: "", isTyping: true });
+                    await scrollToBottom();
+
+                    await fetch(`/api/conversations/${currentConvId.value}/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: text })
+                    });
+                    loadHistory();
+                };
+
+                const toggleTheme = () => {
+                    isDarkMode.value = !isDarkMode.value;
+                    const htmlEl = document.documentElement;
+                    if (isDarkMode.value) htmlEl.classList.add('dark');
+                    else htmlEl.classList.remove('dark');
+                };
+
+                return {
+                    chats, currentConvId, currentChatMessages, currentState, headerInfo,
+                    isExecuting, inputText, isDarkMode, charQueue, isInputLocked,
+                    getPlaceholder, createNewChat, selectChat, deleteChat, sendMessage, toggleTheme,
+                    getStateColor, renderMarkdown
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nika Agent UI - Argus Project</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        // Tailwind 主题配置
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1f2937', 900: '#111827', 950: '#030712' } } } }
+        }
+    </script>
+
+    <style>
+        /* 防止 Vue 挂载前模板语法泄露 */
+        [v-cloak] { display: none; }
+
         /* 滚动条美化 */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -32,13 +519,30 @@
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
         
-        /* 禁用遮罩与终端字体 */
+        /* 交互反馈样式 */
         .disabled-bg { opacity: 0.6; cursor: not-allowed; }
         .font-terminal { font-family: Consolas, "Courier New", monospace; }
+
+        /* 【核心升级】Markdown 渲染样式补丁（Tailwind 会重置这些样式，需要手动补回） */
+        .markdown-body h1 { font-size: 1.5em; font-weight: 800; margin: 1.2em 0 0.6em; border-bottom: 1px solid #374151; padding-bottom: 0.3em; color: #38bdf8; }
+        .markdown-body h2 { font-size: 1.25em; font-weight: 700; margin: 1em 0 0.5em; color: #7dd3fc; }
+        .markdown-body h3 { font-size: 1.1em; font-weight: 600; margin: 0.8em 0 0.4em; }
+        .markdown-body p { margin-bottom: 0.75em; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+        .markdown-body code { background-color: rgba(110, 231, 183, 0.1); color: #6ee7b7; padding: 0.1em 0.3em; border-radius: 4px; font-family: monospace; }
+        .markdown-body pre { background-color: #111827; padding: 1em; border-radius: 8px; overflow-x: auto; margin: 0.75em 0; border: 1px solid #374151; }
+        .markdown-body blockquote { border-left: 4px solid #3b82f6; padding-left: 1em; color: #9ca3af; font-style: italic; margin: 0.75em 0; }
+        
+        /* 表格样式优化 */
+        .markdown-body table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 13px; }
+        .markdown-body th, .markdown-body td { border: 1px solid #374151; padding: 8px 12px; text-align: left; }
+        .markdown-body th { background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; font-weight: bold; }
+        .markdown-body tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
     </style>
 </head>
 <body class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition-colors duration-300 antialiased overflow-hidden">
-    <div id="app" class="flex h-screen w-full">
+    <div id="app" class="flex h-screen w-full" v-cloak>
         
         <aside class="w-64 flex-shrink-0 bg-gray-50 dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors duration-300 relative z-20">
             <div class="p-3">
@@ -116,11 +620,11 @@
                                 </div>
                             </div>
                             
-                            <div class="flex-1 whitespace-pre-wrap leading-relaxed text-[14px] px-5 py-3.5 shadow-sm border"
+                            <div class="flex-1 whitespace-pre-wrap leading-relaxed text-[14px] px-5 py-3.5 shadow-sm border markdown-body"
                                  :class="msg.role === 'assistant' 
                                     ? 'bg-gray-50 dark:bg-[#1e1e1e] text-gray-800 dark:text-gray-300 rounded-2xl rounded-tl-sm border-gray-200 dark:border-gray-700 font-terminal' 
-                                    : 'bg-gray-100 dark:bg-[#374151] text-gray-800 dark:text-gray-100 rounded-2xl rounded-tr-sm border-gray-300 dark:border-gray-600'">
-                                {{ msg.content }}<span v-if="msg.isTyping" class="typing-cursor"></span>
+                                    : 'bg-gray-100 dark:bg-[#374151] text-gray-800 dark:text-gray-100 rounded-2xl rounded-tr-sm border-gray-300 dark:border-gray-600'"
+                                 v-html="renderMarkdown(msg.content, msg.isTyping)">
                             </div>
                         </div>
                     </div>
@@ -157,79 +661,97 @@
     </div>
 
     <script>
+        /**
+         * Nika Agent UI 逻辑核心
+         * 采用了 Vue 3 Composition API
+         */
         const { createApp, ref, computed, nextTick, onMounted } = Vue;
 
         createApp({
             setup() {
-                const chats = ref([]);
-                const currentConvId = ref(null);
-                const currentChatMessages = ref([]);
-                const currentState = ref(null);
-                const contextData = ref({});
+                const chats = ref([]);              // 历史会话列表
+                const currentConvId = ref(null);    // 当前选中的会话 ID
+                const currentChatMessages = ref([]); // 当前会uma内的消息
+                const currentState = ref(null);     // 当前状态机状态
+                const contextData = ref({});        // 后端上下文数据（场景名、故障名）
                 
-                const isExecuting = ref(false); 
-                const inputText = ref('');
-                const isDarkMode = ref(true);
+                const isExecuting = ref(false);     // 后端是否正在执行耗时任务
+                const inputText = ref('');          // 输入框文本
+                const isDarkMode = ref(true);       // 夜间模式
 
-                // 🌟 打字机引擎缓冲区
+                // 打字机缓冲区
                 const charQueue = ref(""); 
                 let ws = null;
 
-                // ==========================================
-                // 1. 修复：改为 async 确保加载顺序，避免并发冲突
-                // ==========================================
                 onMounted(async () => { 
                     await loadHistory(); 
                     createNewChat(); 
-                    startTypewriter(); 
+                    startTypewriter(); // 启动打字机渲染循环
                 });
 
-                // ==========================================
-                // 2. 新增：状态颜色映射函数 (克制的高级深色系)
-                // ==========================================
+                // 【核心升级】渲染 Markdown 的函数
+                const renderMarkdown = (content, isTyping) => {
+                    if (!content && !isTyping) return "";
+                    
+                    // 使用 marked 解析 Markdown
+                    let rawHtml = marked.parse(content || "");
+
+                    // 打字机逻辑：如果正在打字，需要将闪烁光标嵌入到最后一个段落中，防止折行
+                    if (isTyping) {
+                        const cursorHtml = '<span class="typing-cursor"></span>';
+                        if (rawHtml.endsWith('</p>\n')) {
+                            rawHtml = rawHtml.replace(/<\/p>\n$/, `${cursorHtml}</p>\n`);
+                        } else {
+                            rawHtml += cursorHtml;
+                        }
+                    }
+                    return rawHtml;
+                };
+
+                // 侧边栏状态颜色映射
                 const getStateColor = (state) => {
                     const colors = {
-                        'AWAITING_DEPLOY': 'text-blue-600 dark:text-blue-400',       // 蓝色：准备就绪
-                        'AWAITING_INJECT': 'text-cyan-600 dark:text-cyan-500',       // 青色：运行中
-                        'AWAITING_DIAGNOSE': 'text-amber-600 dark:text-amber-500',   // 琥珀色：诊断排查
-                        'AWAITING_EVAL': 'text-purple-600 dark:text-purple-400',     // 紫色：评估打分
-                        'DONE': 'text-emerald-600 dark:text-emerald-500'             // 绿色：圆满结束
+                        'AWAITING_DEPLOY': 'text-blue-600 dark:text-blue-400',       // 准备部署
+                        'AWAITING_INJECT': 'text-cyan-600 dark:text-cyan-500',       // 运行中
+                        'AWAITING_DIAGNOSE': 'text-amber-600 dark:text-amber-500',   // 诊断中
+                        'AWAITING_EVAL': 'text-purple-600 dark:text-purple-400',     // 评测中
+                        'DONE': 'text-emerald-600 dark:text-emerald-500'             // 已结束
                     };
                     return colors[state] || 'text-gray-500';
                 };
 
                 const getPlaceholder = () => {
-                    if (currentState.value === 'DONE') return "✅ 测试全流程生命周期已结束，输入已锁定。请开启新对话。";
-                    if (isExecuting.value) return "⏳ 后台正在处理，请等待终端输出执行完毕...";
-                    return "请输入内容 (回车发送)...";
+                    if (currentState.value === 'DONE') return "✅ 测试已结束，输入已锁定。请开启新对话。";
+                    if (isExecuting.value) return "⏳ 正在分析网络并生成报告，请稍候...";
+                    return "请输入指令 (例如：部署 OSPF 场景)...";
                 };
 
+                // 顶部状态条信息计算
                 const headerInfo = computed(() => {
                     const lab = contextData.value?.lab_name || '未部署场景';
                     const fault = contextData.value?.expected_fault || '未注入故障';
-                    return `【场景】${lab}  |  【故障】${fault}  |  【状态】${currentState.value || '初始化'}`;
+                    return `[场景] ${lab}  |  [故障] ${fault}  |  [状态] ${currentState.value || '初始化'}`;
                 });
 
+                // 加载历史会话
                 const loadHistory = async () => {
                     try {
                         const res = await fetch('/api/conversations');
                         chats.value = await res.json();
-                    } catch (e) {}
+                    } catch (e) { console.error("加载历史失败", e); }
                 };
 
+                // 滚动到底部
                 const scrollToBottom = async () => {
                     await nextTick();
                     const el = document.getElementById('messages-container');
                     if(el) el.scrollTop = el.scrollHeight;
                 };
 
-                // 🚨 修复 6：防刷 "新对话"
+                // 创建新对话
                 const createNewChat = async () => {
-                    // 如果列表的第一条已经是崭新的新对话，直接选中即可，不再发起请求
                     if (chats.value.length > 0 && chats.value[0].title === "新对话" && chats.value[0].state === 'AWAITING_DEPLOY') {
-                        if (currentConvId.value !== chats.value[0].id) {
-                            selectChat(chats.value[0]);
-                        }
+                        if (currentConvId.value !== chats.value[0].id) selectChat(chats.value[0]);
                         return; 
                     }
 
@@ -244,13 +766,14 @@
                     isExecuting.value = false;
                 };
 
+                // 选择并加载对话内容
                 const selectChat = async (chatObj) => {
                     try {
                         currentConvId.value = chatObj.id;
                         currentState.value = chatObj.state;
                         isExecuting.value = false;
                         inputText.value = "";
-                        charQueue.value = ""; // 清空老队列防串台
+                        charQueue.value = ""; 
                         
                         const res = await fetch(`/api/conversations/${chatObj.id}`);
                         const data = await res.json();
@@ -262,27 +785,21 @@
                     } catch(e){}
                 };
 
-                // 🚨 修复 5：流畅秒删与乐观 UI 更新
+                // 删除会话
                 const deleteChat = async (id) => {
-                    if(!confirm("确定彻底删除此流程序列及释放可能的残余拓扑？")) return;
+                    if(!confirm("确定彻底删除此对话及关联的虚拟拓扑？")) return;
                     
-                    // 乐观更新：立刻在前端列表中移除它，制造“秒删”顺滑感
                     const idx = chats.value.findIndex(c => c.id === id);
                     if (idx !== -1) chats.value.splice(idx, 1);
 
-                    // 如果删掉的是正在看的页面，智能跳转
                     if (currentConvId.value === id) {
-                        if (chats.value.length > 0) {
-                            selectChat(chats.value[0]);
-                        } else {
-                            createNewChat();
-                        }
+                        if (chats.value.length > 0) selectChat(chats.value[0]);
+                        else createNewChat();
                     }
-                    
-                    // 后端静默执行清理
                     fetch(`/api/conversations/${id}`, { method: 'DELETE' });
                 };
 
+                // WebSocket 实时日志流接管
                 const setupWebSocket = (conv_id) => {
                     if (ws) { ws.close(); ws = null; }
                     ws = new WebSocket(`ws://${window.location.host}/ws/${conv_id}`);
@@ -291,11 +808,11 @@
                         const data = JSON.parse(event.data);
                         
                         if (data.type === "stream") {
-                            // 收到日志，不直接渲染，而是塞进字符缓冲区
+                            // 增量日志塞入缓冲区
                             charQueue.value += data.content;
                         } 
                         else if (data.type === "prompt") {
-                            // 状态机提示文字：创建新气泡
+                            // 状态更新提示，创建新气泡
                             currentChatMessages.value.push({ role: 'assistant', content: data.content, isTyping: false });
                             fetch(`/api/conversations/${conv_id}`).then(r => r.json()).then(d => {
                                 currentState.value = d.state;
@@ -304,38 +821,38 @@
                             scrollToBottom();
                         }
                         else if (data.type === "done") {
+                            // 流程节点结束
                             isExecuting.value = false;
                             loadHistory(); 
                             fetch(`/api/conversations/${conv_id}`).then(r => r.json()).then(d => {
                                 currentState.value = d.state;
                                 contextData.value = d.context || {};
                             });
-                            
-                            // 关闭上一个气泡的打字光标
                             const lastMsg = currentChatMessages.value[currentChatMessages.value.length - 1];
                             if (lastMsg) lastMsg.isTyping = false;
                         }
                     };
                 };
 
-                // 🌟 核心：打字机引擎处理循环
+                // 打字机渲染引擎（每 20ms 处理一次缓冲区）
                 const startTypewriter = () => {
                     setInterval(() => {
                         if (charQueue.value.length > 0) {
                             const lastMsg = currentChatMessages.value[currentChatMessages.value.length - 1];
                             if (lastMsg && lastMsg.role === 'assistant') {
-                                // 动态限速：堆积大量日志时（如打印源码或 ls）一次性多吐一点防止卡死，平时按 1 字吐
-                                const chunkSize = charQueue.value.length > 300 ? 50 : 2;
+                                // 根据缓冲区大小动态调整吐字速度
+                                const chunkSize = charQueue.value.length > 500 ? 80 : 3;
                                 lastMsg.content += charQueue.value.substring(0, chunkSize);
                                 charQueue.value = charQueue.value.substring(chunkSize);
                                 scrollToBottom();
                             } else {
-                                charQueue.value = ""; // 如果当前没气泡，清空丢弃防死锁
+                                charQueue.value = ""; 
                             }
                         }
-                    }, 20); // 每秒极速渲染 50 帧
+                    }, 20);
                 };
 
+                // 发送消息
                 const sendMessage = async () => {
                     const text = inputText.value.trim();
                     if (!text || isExecuting.value || currentState.value === 'DONE') return;
@@ -344,7 +861,6 @@
                     inputText.value = '';
                     isExecuting.value = true; 
 
-                    // 创建一个带闪烁光标的 AI 占位气泡
                     currentChatMessages.value.push({ role: 'assistant', content: "", isTyping: true });
                     await scrollToBottom();
 
@@ -356,6 +872,7 @@
                     loadHistory();
                 };
 
+                // 主题切换
                 const toggleTheme = () => {
                     isDarkMode.value = !isDarkMode.value;
                     const htmlEl = document.documentElement;
@@ -367,10 +884,10 @@
                     chats, currentConvId, currentChatMessages, currentState, headerInfo,
                     isExecuting, inputText, isDarkMode, charQueue,
                     getPlaceholder, createNewChat, selectChat, deleteChat, sendMessage, toggleTheme,
-                    getStateColor // 👈 记得在这里导出
+                    getStateColor, renderMarkdown
                 };
             }
-        }).mount('#app');
+        }).mount('#app'); // 挂载 Vue 实例到 id="app" 的容器上
     </script>
 </body>
-</html>
+</html> -->

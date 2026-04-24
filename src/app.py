@@ -31,13 +31,13 @@ from diagnose_agent import diagnose_fault
 from judge_agent import build_judge_graph
 
 def reset_topology(lab_name: str):
-    print(f"\n[System] 🧹 正在销毁网络拓扑 ({lab_name})...")
+    print(f"\n**[System] 🧹 正在销毁网络拓扑 ({lab_name})...**")
     try:
         api = KlonetBaseAPI(lab_name)
         api.lab.reset_project()
-        print("[System] ✅ 拓扑销毁成功。")
+        print(" **[System] ✅ 拓扑销毁成功。** ")
     except Exception as e:
-        print(f"[Error] ❌ 拓扑销毁失败: {e}")
+        print(f" **[Error] ❌ 拓扑销毁失败: {e}** ")
 
 # ==========================================
 # 2. WebSocket 管理器与日志持久化拦截器
@@ -150,7 +150,7 @@ app = FastAPI(title="Nika Agent Web UI", lifespan=lifespan)
 async def async_run_deploy(conv_id: str, user_query: str):
     conv = conversations[conv_id]
     try:
-        print(f"\n[System] 开始处理网络场景部署需求: {user_query}")
+        print(f"\n **[System] 开始处理网络场景部署需求: {user_query}**")
         deploy_graph = build_deploy_graph()
         deploy_state = await deploy_graph.ainvoke({
             "user_query": user_query, 
@@ -166,11 +166,11 @@ async def async_run_deploy(conv_id: str, user_query: str):
         conv['state'] = 'AWAITING_INJECT'
         # 💡 【核心修复】：不再调用额外的 push_message 创建新气泡，直接 print。
         # 拦截器会把它完美融进上方的长文本里！
-        print("\n\n[HIL] 👉 拓扑部署已完毕。请选择下一步:\n  - 输入 'r' 销毁当前拓扑并重新部署\n  - 直接输入【故障注入需求】(例如：注入主机接口DOWN故障) 进入注入阶段：")
+        print("\n\n **🚥 [HIL] 拓扑部署已完毕。请选择下一步:** \n  - 输入 'r' 销毁当前拓扑并重新部署\n  - 直接输入【故障注入需求】(例如：注入主机接口DOWN故障) 进入注入阶段 ")
     except Exception as e:
-        print(f"\n❌ [System] 部署过程发生致命异常: {e}\n{traceback.format_exc()}")
+        print(f"\n **❌ [System] 部署过程发生致命异常\n**错误信息**:\n```text\n{e}\n```**\n")
         conv['state'] = 'AWAITING_DEPLOY'
-        print("\n\n[HIL] ⚠️ 部署失败，请检查控制台报错并重新输入部署需求。")
+        print("\n\n **⚠️ [HIL] 部署失败，请检查控制台报错并重新输入部署需求。**")
 
 # 阶段二：故障注入
 async def async_run_inject(conv_id: str, fault_query: str):
@@ -178,7 +178,7 @@ async def async_run_inject(conv_id: str, fault_query: str):
     try:
         lab_name = conv['context']['lab_name']
         netenv_info = conv['context']['netenv_info']
-        print(f"\n[System] 正在场景 {lab_name} 中注入故障: {fault_query}")
+        print(f" \n **💉 [System] 正在场景 {lab_name} 中注入故障: {fault_query}** ")
         
         inject_graph = build_inject_graph()
         inject_state = await inject_graph.ainvoke({
@@ -186,7 +186,7 @@ async def async_run_inject(conv_id: str, fault_query: str):
             "netenv_info": netenv_info,
             "fault_query": fault_query,
             "actor_model": "qwen3.5-27b", 
-            "max_steps": 100
+            "max_steps": 50
         })
         
         conv['context']['problem_info'] = inject_state.get("problem_info", "未知现象")
@@ -194,18 +194,18 @@ async def async_run_inject(conv_id: str, fault_query: str):
         conv['context']['expected_location'] = inject_state.get("expected_location", "unknown")
         
         conv['state'] = 'AWAITING_DIAGNOSE'
-        print("\n\n[HIL] 👉 故障注入已完毕。请选择下一步:\n  - 输入 'r' 重新进行故障注入\n  - 输入 'd' 或 '诊断' 进入下一步开始诊断：")
+        print("\n\n **🚥[HIL] 故障注入已完毕。请选择下一步:** \n  - 输入 'r' 重新进行故障注入\n  - 输入 'd' 或 '诊断' 进入下一步开始诊断 ")
     except Exception as e:
-        print(f"\n❌ [System] 注入过程发生致命异常: {e}\n{traceback.format_exc()}")
+        print(f"\n **❌ [System] 部署过程发生致命异常\n**错误信息**:\n```text\n{e}\n```**\n")
         conv['state'] = 'AWAITING_INJECT'
-        print("\n\n[HIL] ⚠️ 注入失败。请直接输入新的【故障注入需求】：")
+        print("\n\n **⚠️ [HIL] 注入失败。请直接输入新的【故障注入需求】：**")
 
 # 阶段三：故障诊断
 async def async_run_diagnose(conv_id: str):
     conv = conversations[conv_id]
     ctx = conv['context']
     try:
-        print(f"\n[System] 正在启动高级网络故障诊断引擎...")
+        print(f"\n **🕵️‍♂️ [System] 正在启动高级网络故障诊断引擎...** ")
         diag_result = await diagnose_fault(
             lab_name=ctx["lab_name"],
             netenv_info=ctx["netenv_info"],
@@ -213,17 +213,17 @@ async def async_run_diagnose(conv_id: str):
             expected_fault=ctx["expected_fault"],
             expected_location=ctx["expected_location"],
             backend_model="qwen3.5-27b", 
-            max_steps=200,
-            time_limit=1800.0
+            max_steps=50,
+            time_limit=1200.0
         )
         
         ctx['diag_result'] = diag_result
         conv['state'] = 'AWAITING_EVAL'
-        print("\n\n[HIL] 👉 故障诊断已完毕。请选择下一步:\n  - 输入 'r' 或 '重新诊断' 打回重做\n  - 输入 'e' 或 '测评' 开始打分及全流程综合评测：")
+        print("\n\n **🚥 [HIL] 故障诊断已完毕。请选择下一步:** \n  - 输入 'r' 或 '重新诊断' 打回重做\n  - 输入 'e' 或 '测评' 开始打分及全流程综合评测： ")
     except Exception as e:
-        print(f"\n❌ [System] 诊断过程发生致命异常: {e}\n{traceback.format_exc()}")
+        print(f"\n **❌ [System] 部署过程发生致命异常\n**错误信息**:\n```text\n{e}\n```**\n")
         conv['state'] = 'AWAITING_DIAGNOSE'
-        print("\n\n[HIL] ⚠️ 诊断异常退出。请输入 'r' 重试或 'd' 再次诊断。")
+        print("\n\n **⚠️ [HIL] 诊断异常退出。请输入 'r' 重试或 'd' 再次诊断。**")
 
 # 阶段四：测评与收尾生命周期
 async def async_run_eval(conv_id: str):
@@ -231,7 +231,7 @@ async def async_run_eval(conv_id: str):
     ctx = conv['context']
     dr = ctx['diag_result']
     try:
-        print(f"\n[System] 正在启动终极裁判 (Judge Agent) 测评诊断全过程...")
+        print(f"\n**⚖️ [System] 正在启动终极裁判 (Judge Agent) 测评诊断全过程...** ")
         judge_graph = build_judge_graph()
         judge_state = await judge_graph.ainvoke({
             "netenv_info": ctx["netenv_info"],
@@ -249,21 +249,37 @@ async def async_run_eval(conv_id: str):
             "judge_model": "qwen3.5-27b" 
         })
 
-        print("\n" + "=" * 60)
-        print(f"🏆 [Judge] 最终综合评分: {judge_state.get('综合_score', 'N/A')} / 100")
-        print(f"📝 [Judge] 详细评价理由:\n{judge_state.get('subjective_reasoning', '无')}")
-        print("=" * 60)
+        # 【核心修改】利用 Markdown 语法生成严谨的评价指标表格
+        md_table = f"""
+ 🏆 [Judge] 最终综合评测报告
+
+| 评测维度 | 结果 / 指标 |
+| :--- | :--- |
+| **期望故障位置** | `{ctx.get('expected_location', 'unknown')}` |
+| **实际诊断位置** | `{dr.get('fault_location', 'unknown')}` |
+| **位置准确性** | {'✅ 正确' if dr.get('location_correct') else '❌ 错误'} |
+| **期望故障根因** | `{ctx.get('expected_fault', 'unknown')}` |
+| **实际诊断根因** | `{dr.get('diagnosis_result', 'unknown')}` |
+| **归因准确性** | {'✅ 正确' if dr.get('attribution_correct') else '❌ 错误'} |
+| **工具调用次数** | **{dr.get('tool_call_count', 0)}** 次 |
+| **执行耗时** | **{dr.get('execution_time', 0):.2f}** 秒 |
+| **Token 总消耗** | **{dr.get('token_usage', {}).get('total_tokens', 0)}** Tokens |
+| **🌟 综合评测总分**| **{judge_state.get('综合_score', 'N/A')} / 100** |
+
+ 📝 详细评价理由
+{judge_state.get('subjective_reasoning', '无评语')}
+"""
+        print(md_table)
         
         if ctx.get("lab_name"):
             reset_topology(ctx["lab_name"])
 
         conv['state'] = 'DONE'
-        print("\n\n[HIL] ✅ 全流程（部署-注入-诊断-测评）已圆满结束。\n底层网络资源已释放清理，该对话窗口已永久锁定。感谢您的使用！")
-
+        print("\n\n **✅ [HIL] 全流程已圆满结束\n底层网络资源已释放清理，该对话窗口已永久锁定。若要进行下一次测试，请开启【新对话】。**")
     except Exception as e:
-        print(f"\n❌ [System] 测评过程发生致命异常: {e}\n{traceback.format_exc()}")
+        print(f"\n **❌ [System] 测评过程发生致命异常\n```text\n{e}\n{traceback.format_exc()}\n```\n**")
         conv['state'] = 'AWAITING_EVAL'
-        print("\n\n[HIL] ⚠️ 测评异常。请输入 'e' 再次尝试测评。")
+        print("\n\n **⚠️ [HIL] 测评异常。请输入 'e' 再次尝试测评。**")
 
 def worker_thread(coro_func, conv_id: str, *args):
     global active_conv_id
@@ -337,7 +353,11 @@ async def create_conversation():
         'context': {},
         'updated_at': datetime.now().isoformat(), 
         'messages': [
-            {"role": "assistant", "content": "您好！我是 Nika 排障全流程控制中心。\n\n[HIL] 👉 [阶段 1/4 - 部署] 请输入要部署的网络场景（例如：我需要一个静态路由网络）："}
+            {
+                "role": "assistant", 
+                # 【修改点】：添加空格，并使用双换行符 \n\n 隔离标题与正文，符合 Markdown 标准
+                "content": "**[HIL] 👉 [阶段 1/4 - 部署] 请输入要部署的网络场景（例如：我需要一个静态路由网络）：**"
+            }
         ]
     }
     save_conversations()
@@ -369,7 +389,7 @@ async def process_chat(conv_id: str, req: MessageReq):
             conv['state'] = 'AWAITING_DEPLOY'
             # 打印 HIL 路由日志
             active_conv_id_temp = conv_id
-            conv['messages'].append({"role": "assistant", "content": "\n[System] 拓扑已销毁。\n\n[HIL] 👉 请重新输入您要部署的网络场景："})
+            conv['messages'].append({"role": "assistant", "content": "\n [System] 拓扑已销毁。\n\n **[HIL] 👉 请重新输入您要部署的网络场景：**"})
             save_conversations()
             if fastapi_loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps({"type": "done"}), conv_id), fastapi_loop)
         else:
@@ -378,13 +398,13 @@ async def process_chat(conv_id: str, req: MessageReq):
     elif state == 'AWAITING_DIAGNOSE':
         if user_text.lower() in ['r', '重新注入']:
             conv['state'] = 'AWAITING_INJECT'
-            conv['messages'].append({"role": "assistant", "content": "\n[HIL] 👉 请重新输入新的【故障注入需求】："})
+            conv['messages'].append({"role": "assistant", "content": "\n **[HIL] 👉 请重新输入新的【故障注入需求】：**"})
             save_conversations()
             if fastapi_loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps({"type": "done"}), conv_id), fastapi_loop)
         elif user_text.lower() in ['d', '诊断']:
             threading.Thread(target=worker_thread, args=(async_run_diagnose, conv_id)).start()
         else:
-            conv['messages'].append({"role": "assistant", "content": "\n[HIL] ⚠️ 输入无效。请输入 'r' 重新注入，或输入 'd' 开始诊断。"})
+            conv['messages'].append({"role": "assistant", "content": "\n **[HIL] ⚠️ 输入无效。请输入 'r' 重新注入，或输入 'd' 开始诊断。**"})
             save_conversations()
             if fastapi_loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps({"type": "done"}), conv_id), fastapi_loop)
             
@@ -394,12 +414,12 @@ async def process_chat(conv_id: str, req: MessageReq):
         elif user_text.lower() in ['e', '测评', '评测']:
             threading.Thread(target=worker_thread, args=(async_run_eval, conv_id)).start()
         else:
-            conv['messages'].append({"role": "assistant", "content": "\n[HIL] ⚠️ 输入无效。请输入 'r' 重新诊断，或输入 'e' 开始综合测评。"})
+            conv['messages'].append({"role": "assistant", "content": "\n **[HIL] ⚠️ 输入无效。请输入 'r' 重新诊断，或输入 'e' 开始综合测评。**"})
             save_conversations()
             if fastapi_loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps({"type": "done"}), conv_id), fastapi_loop)
             
     elif state == 'DONE':
-        conv['messages'].append({"role": "assistant", "content": "\n[HIL] ⚠️ 当前对话全流程已经结束。若要测试，请开启【新对话】。"})
+        conv['messages'].append({"role": "assistant", "content": "\n **[HIL] ⚠️ 当前对话全流程已经结束。若要测试，请开启【新对话】。**"})
         save_conversations()
         if fastapi_loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps({"type": "done"}), conv_id), fastapi_loop)
 

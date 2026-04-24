@@ -636,7 +636,7 @@ class FaultDiagnosisKnowledgeBase:
         scenario_doc_indices = [i for i, doc in enumerate(self.docs) 
                                 if doc in scenario_filtered_docs]
         
-        print(f"[RAG] Stage 0: 场景过滤 - 从 {len(self.docs)} 个文档中筛选出 {len(scenario_filtered_docs)} 个适用于 '{current_scenario}' 的文档")
+        # print(f"[RAG] Stage 0: 场景过滤 - 从 {len(self.docs)} 个文档中筛选出 {len(scenario_filtered_docs)} 个适用于 '{current_scenario}' 的文档")
         
         # 为场景过滤后的文档重新构建临时 BM25 模型
         scenario_texts = [doc.page_content for doc in scenario_filtered_docs]
@@ -696,7 +696,7 @@ class FaultDiagnosisKnowledgeBase:
                     # 如果找不到（理论上不应该发生），使用默认索引 0
                     milvus_docs_with_idx.append((doc, 0))
         
-        print(f"[RAG] Stage 1 召回结果：BM25={len(bm25_results)} 个, Vector={len(milvus_docs_with_idx)} 个")
+        # print(f"[RAG] Stage 1 召回结果：BM25={len(bm25_results)} 个, Vector={len(milvus_docs_with_idx)} 个")
         
         # ==========================================
         # Stage 2: 快速预排（多样性保证 + 去重 + 层级先验）
@@ -716,7 +716,7 @@ class FaultDiagnosisKnowledgeBase:
         candidate_indices = [unique_indices[doc.metadata.get("fault_name", doc.page_content[:50])] 
                             for doc in candidate_docs]
         
-        print(f"[RAG] 去重后候选文档数：{len(candidate_docs)} 个")
+        # print(f"[RAG] 去重后候选文档数：{len(candidate_docs)} 个")
         
         if not candidate_docs:
             return f"检索系统未找到与该故障相关的信息（场景：{current_scenario}）。"
@@ -731,12 +731,12 @@ class FaultDiagnosisKnowledgeBase:
             top_k=min(stage2_k, len(candidate_docs))  # 防止候选数不足
         )
         
-        print(f"[RAG] Stage 2 预排后候选数：{len(candidate_docs)} 个")
+        # print(f"[RAG] Stage 2 预排后候选数：{len(candidate_docs)} 个")
         
         # ==========================================
         # Stage 3: 交叉编码器精排（只对精选的候选进行重排）
         # ==========================================
-        print(f"[RAG] Stage 3: 交叉编码器精排 - 处理 {len(candidate_docs)} 个文档")
+        # print(f"[RAG] Stage 3: 交叉编码器精排 - 处理 {len(candidate_docs)} 个文档")
         
         pairs = [[query, doc.page_content] for doc in candidate_docs]
         scores = self.cross_encoder.predict(pairs)
@@ -807,6 +807,7 @@ class FaultDiagnosisKnowledgeBase:
 # 第五部分：测试入口
 # ==========================================
 if __name__ == "__main__":
+    import asyncio
     # 第一次运行时设置 force_rebuild=True 以创建新的数据库表结构
     kb = FaultDiagnosisKnowledgeBase(force_rebuild=False)  # 首次运行改为 True，后续改为 False
 
@@ -821,7 +822,7 @@ if __name__ == "__main__":
     async def test():
         result_text = await kb.search(query, current_scenario=current_scenario)
 
-    print(test())
+    print(asyncio.run(test())) # 同步的 print 必须使用异步的 asyncio.run() 包裹
 
     # # 测试查询 2：BGP 故障（路由协议层优先级高）
     # query = "bmv2 交换机总是丢弃数据包"

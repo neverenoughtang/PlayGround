@@ -192,12 +192,12 @@ class DeployAgent:
         chain = prompt_template | self.structured_llm
         
         try:
-            print("[Deploy Agent] 🧠 正在思考应该分配哪个网络拓扑...")
+            print("\n [Deploy Agent] 🧠 正在思考应该分配哪个网络拓扑...")
             result: TopologySelection = await chain.ainvoke({"user_query": user_query})
-            print(f"[Deploy Agent] 🎯 决策完成: 选择了 '{result.lab_name}'。\n理由: {result.reasoning}")
+            print(f"\n [Deploy Agent] 🎯 决策完成: 选择了 **{result.lab_name}**。 \n **理由**: {result.reasoning}")
             return {"lab_name": result.lab_name, "reasoning": result.reasoning}
         except Exception as e:
-            print(f"[Deploy Agent] ❌ LLM 决策失败: {e}")
+            print(f"\n [Deploy Agent] ❌ LLM 决策失败: {e}")
             # 兜底容错，默认返回基础的静态路由
             return {"lab_name": "static_routing", "reasoning": "LLM 解析异常，使用默认兜底拓扑。"}
 
@@ -221,7 +221,7 @@ async def prewarm_systems_node(state: DeployState):
 
     if lab_name:
         try:
-            print("\n[System] 🔄 正在后台执行全局极速预热 (RAG / MCP / NLP)...")
+            print("\n [System] 🔄 正在后台执行全局极速预热 (RAG / MCP / NLP)...")
             # 【核心修改】并发执行预热，提升启动速度
             # 使用 return_exceptions=True 以便两个预热模块能独立报告各自的错误
             results = await asyncio.gather(
@@ -235,16 +235,16 @@ async def prewarm_systems_node(state: DeployState):
             has_error = False
             for module_name, result in zip(module_names, results):
                 if isinstance(result, Exception):
-                    print(f"[Error] ❌ {module_name}预热失败: {type(result).__name__}: {result}")
+                    print(f" [Error] ❌ {module_name}预热失败: {type(result).__name__}: {result}")
                     has_error = True
             
             if not has_error:
-                print("[System] ✅ 全局系统极速预热完毕，等待指令发车！")
+                print(" \n [System] ✅ 全局系统极速预热完毕，等待指令发车！ ")
             else:
                 raise RuntimeError("一个或多个预热模块失败")
                 
         except Exception as e:
-            print(f"[Error] ❌ 预热失败: {e}")
+            print(f" [Error] ❌ 预热失败: {e}")
             raise  # 重新抛出异常以便上层处理
 
     return {} # 预热只产生副作用（修改全局缓存），不改变图的状态字典
@@ -257,7 +257,7 @@ async def execute_deploy_node(state: DeployState):
     lab_name = state["lab_name"]
     os.environ["LAB_NAME"] = lab_name # 设置环境变量以供 Klonet 等底层框架读取
     
-    print(f"\n[System] 🛠️ 开始部署网络拓扑脚本: {lab_name}.py ...")
+    print(f"\n [System] 🛠️ 开始部署网络拓扑脚本: {lab_name}.py ... ")
     
     # 假设所有拓扑脚本均存放在 src/net_env 目录下
     cwd = os.path.abspath(os.path.join(src_dir, "net_env"))
@@ -288,17 +288,17 @@ async def execute_deploy_node(state: DeployState):
             # 真正捕获到的报错字符串，是上面 communicate() 返回的 stderr_bytes。
             # 且因为它是 bytes 字节流，需要 decode() 解码成字符串。
             error_msg = f"拓扑部署失败，执行脚本出错:\n{stderr_bytes.decode('utf-8')}"
-            print(f"[Error] ❌ {error_msg}")
+            print(f" [Error] ❌ {error_msg}")
             return {
                 "deploy_status": "Fatal",
                 "netenv_info": f"部署失败: {error_msg}"
             }
             
-        print(f"[System] ✅ 脚本 {lab_name}.py 执行完成！拓扑成功部署")
+        print(f" \n [System] ✅ 脚本 {lab_name}.py 执行完成！拓扑成功部署 ")
         await asyncio.sleep(3)
         
         # 部署成功后，通过 KlonetBaseAPI 获取全量拓扑信息
-        print(f"[System] 📡 正在通过 Klonet API 抓取 '{lab_name}' 的全量拓扑结构...")
+        print(f" \n [System] 📡 正在通过 Klonet API 抓取 '{lab_name}' 的全量拓扑结构... ")
         api = KlonetBaseAPI(lab_name)
         # 丢进底层线程池
         raw_topo_dict = await asyncio.to_thread(api.get_topo_json) # 传入引用，不能带括号!   
@@ -306,7 +306,7 @@ async def execute_deploy_node(state: DeployState):
         # 将数十 KB 的无用 JSON 数据精简为几十行 LLM 友好的纯文本
         netenv_info = simplify_topo(lab_name, raw_topo_dict)
         
-        print(f"--- 拓扑结构如下 --- \n{netenv_info}")
+        print(f" \n **--- 拓扑结构如下 ---** \n ```text\n{netenv_info}\n``` ")
 
         return {
             "deploy_status": "Successful",
@@ -315,7 +315,7 @@ async def execute_deploy_node(state: DeployState):
         
     except Exception as e:
         error_msg = f"物理部署期间发生严重异常: {e}"
-        print(f"[Error] ❌ {error_msg}")
+        print(f" [Error] ❌ {error_msg}")
         return {
             "deploy_status": "Exception",
             "netenv_info": error_msg

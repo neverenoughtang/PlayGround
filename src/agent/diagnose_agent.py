@@ -171,7 +171,7 @@ async def prewarm_diagnose_caches(lab_name: str):
     if lab_name in _MCP_TOOLS_CACHE and _GLOBAL_EXPERIENCE_RAG_CACHE is not None and _GLOBAL_EXPERIENCE_SQL_CACHE is not None:
         return
     
-    print("🔥 [系统预热] 正在预热诊断层工具与知识库缓存...")
+    print("\n 🔥 [系统预热] 正在预热诊断层工具与知识库缓存... ")
 
     async def prewarm_mcp():
         """
@@ -194,7 +194,7 @@ async def prewarm_diagnose_caches(lab_name: str):
             client = MultiServerMCPClient(connections)
             _MCP_CLIENTS[lab_name] = client
             _MCP_TOOLS_CACHE[lab_name] = await client.get_tools()
-            print(f"   ✅ 诊断层 MCP ({lab_name}) 底层工具预加载完成")
+            print(f" \n ✅ 诊断层 MCP ({lab_name}) 底层工具预加载完成 ")
     
     async def prewarm_milvus():
         """
@@ -203,7 +203,7 @@ async def prewarm_diagnose_caches(lab_name: str):
         global _GLOBAL_EXPERIENCE_RAG_CACHE
         if _GLOBAL_EXPERIENCE_RAG_CACHE is None:
             _GLOBAL_EXPERIENCE_RAG_CACHE = FaultDiagnosisKnowledgeBase(force_rebuild=False)
-            print("   ✅ 诊断层 RAG 向量数据库预加载完成")
+            print(" \n ✅ 诊断层 RAG 向量数据库预加载完成 ")
 
     async def prewarm_sql():
         """
@@ -212,7 +212,7 @@ async def prewarm_diagnose_caches(lab_name: str):
         global _GLOBAL_EXPERIENCE_SQL_CACHE
         if _GLOBAL_EXPERIENCE_SQL_CACHE is None:
             _GLOBAL_EXPERIENCE_SQL_CACHE = DiagnoseExperienceBase()
-            print("   ✅ 诊断层 MySQL 经验检索系统预加载完成")
+            print(" \n ✅ 诊断层 MySQL 经验检索系统预加载完成 ")
 
     # 为了更好的错误处理和诊断，改用 return_exceptions=True
     # 这样即使某个预热任务失败，其他任务也会继续执行
@@ -223,7 +223,7 @@ async def prewarm_diagnose_caches(lab_name: str):
     task_names = ["MCP", "Milvus", "MySQL"]
     for task_name, result in zip(task_names, results):
         if isinstance(result, Exception):
-            print(f"   ❌ 诊断 {task_name} 预热失败: {type(result).__name__}: {result}")
+            print(f" ❌ 诊断 {task_name} 预热失败: {type(result).__name__}: {result}")
             raise result  # 如果任何预热任务失败，抛出异常
         # 如果result是None（成功），该任务已经打印了成功消息
 
@@ -250,7 +250,7 @@ async def search_experience(lab_name: str, complaint: str, experience_count: int
     """
     global _GLOBAL_EXPERIENCE_SQL_CACHE
     if _GLOBAL_EXPERIENCE_SQL_CACHE == None:
-        await prewarm_diagnose_caches()
+        await prewarm_diagnose_caches(lab_name)
     return await _GLOBAL_EXPERIENCE_SQL_CACHE.search(
         lab_name=lab_name,  
         keyword=complaint, 
@@ -269,7 +269,7 @@ async def search_knowledge(fault: str, lab_name: str, knowledge_count: int = 2):
     """
     global _GLOBAL_EXPERIENCE_RAG_CACHE
     if _GLOBAL_EXPERIENCE_RAG_CACHE == None:
-        await _GLOBAL_EXPERIENCE_RAG_CACHE
+        await prewarm_diagnose_caches(lab_name)
     return await _GLOBAL_EXPERIENCE_RAG_CACHE.search(
         query=fault,
         current_scenario=lab_name,
@@ -293,16 +293,12 @@ async def global_inspector_node(state: DiagnoseState):
     - global_ping_summary: 总结后的 ping 信息
     - fault_symptom: 简略故障表现
     """
-    print("\n" + "="*60)
-    print("👁️ [Global Inspector] 正在执行全局可达性巡检...")
-    print("="*60)
-
     # 1. 获取工具并调用 get_reachability
     tools = await get_mcp_tools(state["lab_name"])
     reachability_tool = next((t for t in tools if t.name == "get_reachability"), None)
     
     if not reachability_tool:
-        print("❌ [Global Inspector] 未找到 get_reachability 工具！")
+        print(" ❌ [Global Inspector] 未找到 get_reachability 工具！")
         return {
             "global_ping_summary": "【系统错误】: 未找到全局巡检工具",
             "fault_symptom": "暂无表现"
@@ -310,7 +306,6 @@ async def global_inspector_node(state: DiagnoseState):
     
     # 调用工具获取原始 ping 数据
     raw_ping_data = await reachability_tool.ainvoke({})
-    print(f"📊 [Global Inspector] 原始 ping 数据长度: {len(str(raw_ping_data))} 字符")
     
     # 2. 用 LLM 摘要 ping 数据
     llm = load_model(backend_model=state["backend_model"])
@@ -360,8 +355,8 @@ async def global_inspector_node(state: DiagnoseState):
     lines = summary_text.split("\n")[0] # 第一行
     fault_symptom = lines.split()[1].strip() if lines.split()[1].strip() else "暂无表现"
     
-    print(f"\n[Global Inspector] 巡检完成 ✅")
-    print(f"   - Ping 总结: \n{summary_text}")
+    print(f"\n 👁️ [Global Inspector] 巡检完成 ✅\n ")
+    print(f"**Ping 总结**:\n> {summary_text.replace(chr(10), chr(10)+'> ')}\n") # 加上引用符号
     
     return {
         "global_ping_summary": summary_text,
@@ -381,51 +376,25 @@ async def experience_planner_node(state: DiagnoseState):
     
     输出：
     - knowledge_context: 拼接好的经验字符串
-    """
-    print("\n" + "="*60)
-    print("📚 [Experience Planner] 正在提取诊断经验...")
-    print("="*60)
-    
+    """  
     global _GLOBAL_EXPERIENCE_RAG_CACHE, _GLOBAL_EXPERIENCE_SQL_CACHE
     # 事件循环并发查询 SQL 和 Milvus
-    print("🔍 [MySQL + Milvus] 正在检索历史成功经验和固定诊断手册...")
+    # print("🔍 [MySQL + Milvus] 正在检索历史成功经验和固定诊断手册...")
     tasks = [search_experience(state["lab_name"], complaint=f"{state['problem_info']} {state['fault_symptom']}", experience_count=5),
              search_knowledge(fault=state["expected_fault"], lab_name=state["lab_name"], knowledge_count=5)]
     
-    # 1. 从 MYSQL 提取成功经验
-    # 构建查询关键词：用户投诉 + 故障表现
-    # search_keyword = f"{state['problem_info']} {state['fault_symptom']}"
-    # mysql_experience = await _GLOBAL_EXPERIENCE_SQL_CACHE.search(
-    #     lab_name=state["lab_name"],
-    #     keyword=search_keyword,
-    #     limit=5  # 最多返回 10 条不重复根因的经验
-    # )
-    # # 2. 从 Milvus 提取固定经验
-    # print("🔍 [Milvus] 正在检索固定诊断手册...")
-    # milvus_experience = _GLOBAL_EXPERIENCE_RAG_CACHE.search(
-    #     query=state["problem_info"],
-    #     current_scenario=state["lab_name"],
-    #     stage1_k=20,
-    #     stage2_k=10,
-    #     final_k=5,
-    #     enable_adaptive=True
-    # )
-    # # 3. 拼接经验
-    # def truncate_text(text, max_len=2000):
-    #         return text[:max_len] + "..." if len(text) > max_len else text
-
     clean_mysql, clean_milvus = await asyncio.gather(*tasks)
 
     knowledge_context = f"""
-    【历史成功经验】:
+    【历史成功经验】
     {clean_mysql}
 
-    【固定诊断手册】:
+    【固定诊断手册】
     {clean_milvus}
     """
     
-    print(f"[Experience Planner] 经验提取完成 ✅")
-    print(knowledge_context)
+    print(f"\n [Experience Planner] 经验提取完成 ✅ ")
+    # print(knowledge_context)
     
     return {"knowledge_context": knowledge_context}
 
@@ -443,22 +412,22 @@ async def diagnosis_expert_node(state: DiagnoseState):
     - messages: 追加 AI 消息（可能包含工具调用）
     - token_usage: 更新 Token 统计
     """
-    print("\n" + "="*60)
-    print("🧠 [Diagnosis Expert] 正在进行深度推理...")
-    print("="*60)
+    
+    print(" 🧠 [Diagnosis Expert] 正在进行深度推理...")
+    
     
     # 1. 检查是否超时或超步数
     current_time = time.time()
     elapsed_time = current_time - state["start_time"]
     
     if elapsed_time > state["time_limit"]:
-        print(f"⏰ [Diagnosis Expert] 诊断超时！已用时 {elapsed_time:.2f}秒，超过限制 {state['time_limit']}秒")
+        print(f" ⏰ [Diagnosis Expert] 诊断超时！已用时 {elapsed_time:.2f}秒，超过限制 {state['time_limit']}秒")
         return {
             "messages": [AIMessage(content="[TIMEOUT] 诊断超时，强制终止")]
         }
     
     if state["tool_call_count"] >= state["max_steps"]:
-        print(f"🚫 [Diagnosis Expert] 已达最大步数限制 {state['max_steps']} 步")
+        print(f" 🚫 [Diagnosis Expert] 已达最大步数限制 {state['max_steps']} 步")
         return {
             "messages": [AIMessage(content="[MAX_STEPS] 达到最大步数限制，强制终止")]
         }
@@ -566,7 +535,7 @@ async def diagnosis_expert_node(state: DiagnoseState):
             f"{sys_prompt}\n"
             f"{'='*70}"
         )
-        print(init_log)
+        # print(init_log)
 
     # 4. 组合最终传给大模型的消息列表
     messages_for_llm = [SystemMessage(content=sys_prompt)] + current_messages
@@ -575,10 +544,10 @@ async def diagnosis_expert_node(state: DiagnoseState):
     try:
         response = await asyncio.wait_for(llm_with_tools.ainvoke(messages_for_llm), timeout=240.0)
     except asyncio.TimeoutError:
-        print("⚠️ [Diagnosis Expert] LLM API 请求超时！")
+        print(" ⚠️ [Diagnosis Expert] LLM API 请求超时！")
         return {"messages": [AIMessage(content="[ERROR] LLM API 响应超时")]}
     except Exception as e:
-        print(f"❌ [Diagnosis Expert] LLM 调用抛出异常: {e}")
+        print(f" ❌ [Diagnosis Expert] LLM 调用抛出异常:\n```text{e}```\n")
         raise e
     
     # 将 LLM 的输出也放入待返回列表
@@ -593,10 +562,10 @@ async def diagnosis_expert_node(state: DiagnoseState):
     
     # 7. 打印推理内容
     if hasattr(response, 'content') and response.content:
-        print(f"\n💭 [Thought]: {response.content[:200]}...")
+        print(f"\n 💭 [Thought]\n{response.content}\n")
     
     if hasattr(response, 'tool_calls') and response.tool_calls:
-        print(f"🔧 [Action]: 准备调用 {len(response.tool_calls)} 个工具")
+        print(f"\n**准备调用 {len(response.tool_calls)} 个工具...**\n")
     
     # 8. 确保第一轮创建的 HumanMessage 和模型回复的 AIMessage 一并存入 State
     return {
@@ -627,9 +596,7 @@ async def tool_filter_node(state: DiagnoseState):
     if not (hasattr(last_msg, 'tool_calls') and last_msg.tool_calls):
         return {}
     
-    print("\n" + "="*60)
-    print("🛠️ [Tool Filter] 正在执行工具调用...")
-    print("="*60)
+    # print("🛠️ [Tool Filter] 正在执行工具调用...")
     
     mcp_tools = await get_mcp_tools(state["lab_name"])
     
@@ -652,24 +619,24 @@ async def tool_filter_node(state: DiagnoseState):
         tool_name = tc["name"]
         tool_args = tc["args"]
         
-        print(f"\n🔧 [Tool {tool_count}] {tool_name}")
-        print(f"   参数: {json.dumps(tool_args, ensure_ascii=False, indent=2)}")
+        print(f"\n 🔧 [Tool {tool_count}]: `{tool_name}`")
+        print(f"**参数**:\n```json\n{json.dumps(tool_args, ensure_ascii=False, indent=2)}\n```\n")
         
         # 执行工具
         t_func = tool_map.get(tool_name)
         if not t_func:
-            print(f"❌ [Tool Filter] 未找到工具: {tool_name}")
+            print(f" ❌ [Tool Filter] 未找到工具: {tool_name}")
             results.append(ToolMessage(
                 tool_call_id=tc["id"],
                 name=tool_name,
-                content=f"[ERROR] 未找到工具: {tool_name}"
+                content=f" [ERROR] 未找到工具: {tool_name}"
             ))
             continue
         
         try:
             raw_output = await t_func.ainvoke(tool_args)
         except Exception as e:
-            print(f"❌ [Tool Filter] 工具执行失败: {e}")
+            print(f" ❌ [Tool Filter] 工具执行失败: {e}")
             results.append(ToolMessage(
                 tool_call_id=tc["id"],
                 name=tool_name,
@@ -681,7 +648,7 @@ async def tool_filter_node(state: DiagnoseState):
         if tool_name == "submit_diagnosis":
             diagnosis_res = tool_args.get("root_cause", "unknown")
             fault_loc = tool_args.get("fault_location", "unknown")
-            print(f"\n✅ [诊断完成] 故障位置: {fault_loc}, 根因: {diagnosis_res}")
+            print(f"\n ✅ [诊断完成] 故障位置: {fault_loc}, 根因: {diagnosis_res}")
 
             # 【新增】立即计算正确性
             location_correct = (fault_loc.strip().lower() == 
@@ -819,9 +786,9 @@ async def tool_filter_node(state: DiagnoseState):
             usage["output_tokens"] += summary.usage_metadata.get("output_tokens", 0)
             usage["total_tokens"] += summary.usage_metadata.get("total_tokens", 0)
 
-        final_output = f"\n[工具输出]\n{raw_str}\n [专家发现] {summary.content}"
+        final_output = f"\n [工具输出原文]\n```text\n{raw_str}\n```\n [专家总结发现]\n{summary.content}\n "
         
-        print(f"   ✅ 执行成功，返回内容: {final_output}...")
+        print(f" \n ✅ 执行成功，返回内容:\n{final_output} ")
         
         results.append(ToolMessage(
             tool_call_id=tc["id"],
@@ -852,9 +819,9 @@ async def summary_node(state: DiagnoseState):
     输出：
     - 无（直接操作数据库）
     """
-    print("\n" + "="*60)
-    print("📝 [Summary] 正在检查诊断结果...")
-    print("="*60)
+    
+    print("\n 📝 [Summary] 正在检查诊断结果...")
+    
     
     # 1. 判断诊断是否成功
     # 成功条件：故障位置正确 AND 故障原因正确
@@ -862,25 +829,25 @@ async def summary_node(state: DiagnoseState):
     attribution_correct = state.get("attribution_correct", False)
     is_success = location_correct and attribution_correct
     
-    print(f"   期望故障位置: {state.get('expected_location', 'N/A')}")
-    print(f"   实际故障位置: {state.get('fault_location', 'N/A')}")
-    print(f"   位置判断: {'✅ 正确' if location_correct else '❌ 错误'}")
-    print()
-    print(f"   期望故障原因: {state.get('expected_fault', 'N/A')}")
-    print(f"   实际故障原因: {state.get('diagnosis_result', 'N/A')}")
-    print(f"   原因判断: {'✅ 正确' if attribution_correct else '❌ 错误'}")
-    print()
-    print(f"   最终结果: {'🎉 诊断成功' if is_success else '⚠️ 诊断失败'}")
+    # print(f"   期望故障位置: {state.get('expected_location', 'N/A')}")
+    # print(f"   实际故障位置: {state.get('fault_location', 'N/A')}")
+    # print(f"   位置判断: {'✅ 正确' if location_correct else '❌ 错误'}")
+    # print()
+    # print(f"   期望故障原因: {state.get('expected_fault', 'N/A')}")
+    # print(f"   实际故障原因: {state.get('diagnosis_result', 'N/A')}")
+    # print(f"   原因判断: {'✅ 正确' if attribution_correct else '❌ 错误'}")
+    # print()
+    # print(f"   最终结果: {'🎉 诊断成功' if is_success else '⚠️ 诊断失败'}")
     
     if not is_success:
-        print("\n" + "="*60)
+        
         print("⚠️ [Summary] 诊断未成功，跳过经验总结")
-        print("="*60)
+        
         return {}
     
-    print("\n" + "="*60)
-    print("📝 [Summary] 诊断成功！正在提炼关键步骤并写入数据库...")
-    print("="*60)
+    
+    # print("\n 📝 [Summary] 诊断成功！正在提炼关键步骤并写入数据库... ")
+    
     
     # 2. 构建完整诊断轨迹（从 messages 中提取）
     diagnosis_trajectory = []
@@ -910,7 +877,7 @@ async def summary_node(state: DiagnoseState):
     full_trajectory = "\n".join(diagnosis_trajectory)
     
     # 3. 调用 LLM 提炼关键步骤（结构化输出）
-    print("🤖 [Summary] 正在调用 LLM 提炼关键诊断步骤...")
+    # print("🤖 [Summary] 正在调用 LLM 提炼关键诊断步骤...")
     
     llm = load_model(backend_model=state["backend_model"])
     
@@ -955,11 +922,11 @@ async def summary_node(state: DiagnoseState):
         
         # 验证输出格式（简单检查是否包含必要的标记）
         if "[Thought]:" not in key_actions_str or "[Action]:" not in key_actions_str:
-            print("⚠️ [Summary] LLM 输出格式异常，使用原始轨迹摘要")
+            print(" ⚠️ [Summary] LLM 输出格式异常，使用原始轨迹摘要")
             # 兜底：手动提取前 10 条记录
             key_actions_str = "\n".join(diagnosis_trajectory[:30])
         
-        print(f"✅ [Summary] 关键步骤提炼完成，长度: {len(key_actions_str)} 字符")
+        # print(f" \n ✅ [Summary] 关键步骤提炼完成，长度: {len(key_actions_str)} 字符")
         
     except Exception as e:
         print(f"❌ [Summary] LLM 提炼失败: {e}")
@@ -967,7 +934,7 @@ async def summary_node(state: DiagnoseState):
         key_actions_str = "\n".join(diagnosis_trajectory[:30])
     
     # 4. 写入 MySQL 数据库
-    print("💾 [Summary] 正在将经验写入 MySQL...")
+    # print("\n 💾 [Summary] 正在将经验写入 MySQL... ")
     
     mysql_db = DiagnoseExperienceBase()
     
@@ -982,15 +949,15 @@ async def summary_node(state: DiagnoseState):
             key_actions=key_actions_str
         )
         
-        print(f"✅ [Summary] 经验已成功写入数据库")
-        print(f"   - 场景: {state['lab_name']}")
-        print(f"   - 故障表现: {state['fault_symptom']}")
-        print(f"   - 根本原因: {state['diagnosis_result']}")
-        print(f"   - 故障位置: {state['fault_location']}")
-        print(f"   - 关键步骤: \n{key_actions_str} ")
+        print(f"\n ✅ [Summary] 经验已成功写入数据库 ")
+        # print(f"   - 场景: {state['lab_name']}")
+        # print(f"   - 故障表现: {state['fault_symptom']}")
+        # print(f"   - 根本原因: {state['diagnosis_result']}")
+        # print(f"   - 故障位置: {state['fault_location']}")
+        # print(f"   - 关键步骤: \n{key_actions_str} ")
         
     except Exception as e:
-        print(f"❌ [Summary] 写入数据库失败: {e}")
+        print(f" ❌ [Summary] 写入数据库失败: {e}")
         import traceback
         traceback.print_exc()
     
@@ -1014,7 +981,7 @@ def should_continue(state: DiagnoseState) -> Literal["tool_filter_node", "summar
     
     # 【修改】使用标志位简化判断
     if state.get("location_correct", False) and state.get("attribution_correct", False):
-        print("\n✅ [Router] 诊断成功（位置+归因均正确），进入总结阶段")
+        print("\n ✅ [Router] 诊断成功（位置+归因均正确），进入总结阶段")
         return "summary_node"
     
     # 检查是否超时或超步数
@@ -1022,20 +989,20 @@ def should_continue(state: DiagnoseState) -> Literal["tool_filter_node", "summar
     elapsed_time = current_time - state["start_time"]
     
     if elapsed_time > state["time_limit"]:
-        print(f"\n⏰ [Router] 诊断超时（{elapsed_time:.2f}秒 > {state['time_limit']}秒），强制进入总结")
+        print(f"\n ⏰ [Router] 诊断超时（{elapsed_time:.2f}秒 > {state['time_limit']}秒），强制进入总结")
         return "summary_node"
     
     if state["tool_call_count"] >= state["max_steps"]:
-        print(f"\n🚫 [Router] 达到最大步数（{state['tool_call_count']} >= {state['max_steps']}），强制进入总结")
+        print(f"\n 🚫 [Router] 达到最大步数（{state['tool_call_count']} >= {state['max_steps']}），强制进入总结")
         return "summary_node"
     
     # 检查是否有工具调用
     if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
-        print(f"\n🔄 [Router] 检测到工具调用，进入工具执行节点")
+        print(f"\n 🔄 [Router] 检测到工具调用，进入工具执行节点")
         return "tool_filter_node"
     
     # 其他情况（LLM 输出了纯文本，没有工具调用）
-    print(f"\n⚠️ [Router] LLM 未生成工具调用，进入总结阶段")
+    print(f"\n ⚠️ [Router] LLM 未生成工具调用，进入总结阶段")
     return "summary_node"
 
 
@@ -1114,13 +1081,8 @@ async def diagnose_fault(
     返回：
     - dict: 包含诊断结果、执行统计等信息
     """
-    print("\n" + "="*80)
-    print("🚀 故障诊断智能体启动".center(80))
-    print("="*80)
-    print(f"场景: {lab_name}")
-    print(f"模型: {backend_model}")
-    print(f"限制: 最多 {max_steps} 步，最长 {time_limit} 秒")
-    print("="*80)
+    
+    print(f" \n 🚀 场景: {lab_name} | 最大步数: {max_steps} | 最长时间: {time_limit}s ")
     
     # 初始化状态
     initial_state = {
@@ -1172,18 +1134,18 @@ async def diagnose_fault(
     final_state["execution_time"] = time.time() - final_state["start_time"]
     
     # 打印诊断报告
-    print("\n" + "="*80)
-    print("📊 诊断报告".center(80))
-    print("="*80)
-    print(f"诊断结果: {'✅ 成功' if final_state.get("expected_fault") == final_state.get("diagnosis_result") and final_state.get("expected_location") == final_state.get("fault_location") else '❌ 失败'}")
-    print(f"故障位置: {final_state['fault_location']}")
-    print(f"故障根因: {final_state['diagnosis_result']}")
-    print(f"执行步数: {final_state['tool_call_count']} / {max_steps}")
-    print(f"执行时间: {final_state['execution_time']:.2f}秒 / {time_limit}秒")
-    print(f"Token 消耗: {final_state['token_usage']['total_tokens']} tokens")
-    print(f"  - 输入: {final_state['token_usage']['input_tokens']}")
-    print(f"  - 输出: {final_state['token_usage']['output_tokens']}")
-    print("="*80)
+    
+    # print("📊 诊断报告".center(80))
+    
+    # print(f"诊断结果: {'✅ 成功' if final_state.get("expected_fault") == final_state.get("diagnosis_result") and final_state.get("expected_location") == final_state.get("fault_location") else '❌ 失败'}")
+    # print(f"故障位置: {final_state['fault_location']}")
+    # print(f"故障根因: {final_state['diagnosis_result']}")
+    # print(f"执行步数: {final_state['tool_call_count']} / {max_steps}")
+    # print(f"执行时间: {final_state['execution_time']:.2f}秒 / {time_limit}秒")
+    # print(f"Token 消耗: {final_state['token_usage']['total_tokens']} tokens")
+    # print(f"  - 输入: {final_state['token_usage']['input_tokens']}")
+    # print(f"  - 输出: {final_state['token_usage']['output_tokens']}")
+    
     
     return {
         "location_correct": final_state.get("location_correct", False),    # 【新增】

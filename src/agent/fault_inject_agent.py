@@ -62,7 +62,7 @@ async def prewarm_inject_caches(lab_name: str):
     if lab_name in _INJECT_MCP_TOOLS_CACHE and _GLOBAL_INJECT_RAG_CACHE is not None:
         return
     
-    print("🔥 [系统预热] 正在预热故障注入层 MCP 工具与 RAG 知识库缓存...")
+    print(" \n 🔥 [系统预热] 正在预热故障注入层 MCP 工具与 RAG 知识库缓存...")
     
     # 1. 预热 MCP 工具
     if lab_name not in _INJECT_MCP_TOOLS_CACHE:
@@ -77,12 +77,12 @@ async def prewarm_inject_caches(lab_name: str):
         client = MultiServerMCPClient(connections)
         _INJECT_MCP_CLIENTS[lab_name] = client
         _INJECT_MCP_TOOLS_CACHE[lab_name] = await client.get_tools()
-        print(f"   ✅ 注入层 MCP ({lab_name}) 底层工具预加载完成")
+        print(f" \n ✅ 注入层 MCP ({lab_name}) 底层工具预加载完成")
         
     # 2. 预热 RAG 数据库 (底层会自动复用内存中的 HuggingFace 模型权重)
     if _GLOBAL_INJECT_RAG_CACHE is None:
         _GLOBAL_INJECT_RAG_CACHE = FaultKnowledgeBase(force_rebuild=False)
-        print("   ✅ 注入层 RAG 向量数据库与 NLP 预加载完成")
+        print(" \n ✅ 注入层 RAG 向量数据库与 NLP 预加载完成")
 
 # --- Linux TC 工具 (1个) ---
 @tool()
@@ -128,7 +128,7 @@ def tc_set(
     return str(API.lab.configure_link(config=config))
 
 @tool
-def search_fault_manual(query: str, count: int = 2) -> str:
+async def search_fault_manual(query: str, count: int = 2) -> str:
     """
     当你不清楚如何注入某种故障时，调用此工具搜索故障手册。
     Args:
@@ -139,7 +139,7 @@ def search_fault_manual(query: str, count: int = 2) -> str:
     """
     rag = _GLOBAL_INJECT_RAG_CACHE if _GLOBAL_INJECT_RAG_CACHE else FaultKnowledgeBase(force_rebuild=False)
     # Agent 传入的 query 可能是单个短语，动态设置 final_k
-    return rag.search(query, ensemble_k=4*count, final_k=count)
+    return await rag.search(query, ensemble_k=4*count, final_k=count)
 
 @tool
 def submit_inject(result: str, synthesized_problem_info: str, expected_fault: str, expected_location: str) -> str:
@@ -234,7 +234,7 @@ node_execute("r1", "pkill bgpd")
         return SYSTEM_PROMPT
 
     async def inject_check_fault(self, timeout: int = 1200) -> Dict[str, Any]:
-        print(f"\n[InjectAgent] 🚀 启动多模态复合故障注入流程...")
+        print(f"\n [InjectAgent] 🚀 启动多模态复合故障注入流程... ")
         
         # 将提示词块合并打印
         init_log = (
@@ -244,7 +244,7 @@ node_execute("r1", "pkill bgpd")
             f"{self.system_prompt}\n"
             f"{'='*70}"
         )
-        print(init_log)
+        # print(init_log)
 
         # 初始化输出载体（改回单数）
         result_payload = {
@@ -272,11 +272,11 @@ node_execute("r1", "pkill bgpd")
                     last_msg = chunk["messages"][-1]
                     if last_msg.type == "ai":
                         if last_msg.content:
-                            print(f"\n🤔 [Thought]: {last_msg.content.strip()}")
+                            print(f"\n🤔 [Thought]\n{last_msg.content.strip()}")
                         
                         if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
                             for tc in last_msg.tool_calls:
-                                print(f"\n🛠️ [Action]: Call '{tc['name']}' with {tc['args']}")
+                                print(f"\n🛠️ [Action]\n**调用工具**: `{tc['name']}`\n**参数**:\n```json\n{json.dumps(tc['args'], ensure_ascii=False)}\n```\n")
                                 
                                 # 核心解析：捕获结束信号和答案
                                 if tc['name'] == 'submit_inject':
@@ -299,24 +299,22 @@ node_execute("r1", "pkill bgpd")
                         clean_text = clean_text.strip()
 
                         if "submit" in t_name:
-                            log_str = f"\n📕 [Submission]: {clean_text}"
-                            print(log_str)
+                            print(f"\n📕 [Submission]\n> {clean_text}\n")
                         elif "search_fault_manual" in t_name:
-                            # 为防止手册内容刷屏，在控制台可以做一定省略截断
-                            print(f"\n📚 [RAG 检索结果]: 获取到 {len(clean_text)} 字符的参考资料。")
+                            print(f"\n📚 [RAG 检索结果]\n> 获取到 **{len(clean_text)}** 字符的参考资料。\n")
                         else:
-                            log_str = f"\n👁️ [Observation from {t_name}]: {clean_text}"
-                            print(log_str)
+                            # 【优化】使用 Markdown 引用语法包裹终端结果，避免排版错乱
+                            print(f"\n👁️ [Observation] (来自 `{t_name}`)\n```text\n{clean_text}\n```\n")
             
             # 使用带超时的执行闭包
             await asyncio.wait_for(_process_stream(), timeout=timeout)
 
         except asyncio.TimeoutError:
-            print(f"⚠️ [Agent 中断]: 流程执行超时 ({timeout} 秒)！")
+            print(f"\n⚠️ [Agent 中断]: 流程执行超时 ({timeout} 秒)！")
         except GraphRecursionError:
-            print(f"⚠️ [Error]: Reached max steps limit.")
+            print(f"\n⚠️ [Error]: Reached max steps limit.")
         except Exception as e:
-            print(f"【详细错误追踪】:\n{traceback.format_exc()}")
+            print(f"\n【详细错误追踪】\n{traceback.format_exc()}")
         finally:
             # MCP server 会自动释放资源
             pass

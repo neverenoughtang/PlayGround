@@ -15,7 +15,7 @@ def load_model(backend_model: str = "gemini-3-flash-preview") -> BaseChatModel:
     if backend_model in ["qwen3.5-27b"]:
         llm = ChatOpenAI(
             model=backend_model,
-            base_url=os.getenv("MEDIUM_URL"),
+            base_url=os.getenv("SMALL_URL"),
             api_key="any",
             temperature=0 # 排障任务必须为0，保证工具调用稳定性
         )
