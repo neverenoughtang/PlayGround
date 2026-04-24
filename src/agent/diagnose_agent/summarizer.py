@@ -1,3 +1,4 @@
+import asyncio
 import json
 from langchain_core.messages import HumanMessage
 from utils.diagnose_experience_sql import DiagnoseExperienceBase
@@ -44,7 +45,7 @@ async def summarizer_node(state: DiagnoseState):
         total_tokens["input_tokens"] += w["token_usage"]["input_tokens"]
         total_tokens["output_tokens"] += w["token_usage"]["output_tokens"]
         total_tools += w["tool_call_count"]
-        full_trajectory_logs.append(f"--- 【{w['worker_id']}】({w['hypothesis']}) ---\n{w['trajectory_log']}")
+        full_trajectory_logs.append(f"--- 【{w['worker_id']}】({w['target_fault']}) ---\n{w['trajectory_log']}")
         
     total_tokens["total_tokens"] = total_tokens["input_tokens"] + total_tokens["output_tokens"]
     global_trajectory = "\n\n".join(full_trajectory_logs)
@@ -53,7 +54,7 @@ async def summarizer_node(state: DiagnoseState):
     # 【注意】这里必须使用 qwen3.5-big 来保证 JSON 输出的准确性
     if submitted_set:
         print("🤖 [Summarizer] 正在调用 Big 模型抽取结构化经验...")
-        llm = load_model(backend_model="qwen3.5-big")
+        llm = load_model(backend_model="qwen3.5-medium")
         extract_prompt = f"""
         请从以下用户投诉+并行诊断记录中，提取出 **一条或多条** **成功发现故障** 的 React(Thought-Action-Observation) 逻辑步骤。
         要求输出为一个包含模糊投诉、故障名和关键步骤的 JSON 数组格式：
@@ -99,6 +100,7 @@ async def summarizer_node(state: DiagnoseState):
                     key_actions=case.get("key_actions", "")
                 )
             print("💾 [Summarizer] 标准化经验入库成功！")
+            asyncio.sleep(5)
         except Exception as e:
             print(f"⚠️ [Summarizer] 经验提取或入库异常 (跳过): {e}")
 

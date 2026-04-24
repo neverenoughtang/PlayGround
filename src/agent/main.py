@@ -111,8 +111,9 @@ async def main():
         # 3. 故障诊断阶段 (Argus 主从阵列)
         # ==========================================
         while True:
-            max_steps_input = int(input("[HIL - 诊断阶段] 请输入最大执行次数 (默认 200): ")) or 200     
-
+            steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (默认 200): ")    
+            max_steps_input = int(steps_input) if steps_input else 200
+            
             diag_result = await diagnose_fault(
                 lab_name=lab_name,
                 netenv_info=netenv_info,

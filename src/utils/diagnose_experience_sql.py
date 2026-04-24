@@ -54,7 +54,7 @@ class DiagnoseExperienceBase:
         """
         Docker 状态检查与自启守护 (MySQL)
         """
-        print("⏳ [Summary Agent] 正在检查 MySQL 底层容器及端口状态...")
+        # print("⏳ [Summary Agent] 正在检查 MySQL 底层容器及端口状态...")
         port_ready = False
         try:
             with socket.create_connection((self.db_host, self.db_port), timeout=1):
@@ -63,10 +63,10 @@ class DiagnoseExperienceBase:
             pass
 
         if port_ready:
-            print("✅ [Summary Agent] MySQL 端口(3306)通信握手成功，服务运行正常。")
+            # print("✅ [Summary Agent] MySQL 端口(3306)通信握手成功，服务运行正常。")
             return
 
-        print("⚠️ [Summary Agent] 发现 MySQL 端口未就绪，尝试自动唤醒 mysql 容器...")
+        # print("⚠️ [Summary Agent] 发现 MySQL 端口未就绪，尝试自动唤醒 mysql 容器...")
         try:
             # 👇 【核心修复】：将容器名改为 diagnosis-mysql
             container_name = "diagnosis-mysql" 
@@ -99,7 +99,7 @@ class DiagnoseExperienceBase:
         在类实例化时，一次性把自定义领域词典加载进内存，并触发 jieba 的懒加载构建前缀树。
         这样可以把 0.75s 的耗时转移到系统启动阶段，让用户的 Search 实时响应。
         """
-        print("⏳ [Summary Agent] 正在预热 NLP 模型与专有名词库...")
+        # print("⏳ [Summary Agent] 正在预热 NLP 模型与专有名词库...")
         domain_words = DOMAIN_WORDS
         for word in domain_words:
             jieba.add_word(word)
@@ -144,7 +144,7 @@ class DiagnoseExperienceBase:
                 cursor.execute(create_table_sql)
             
             connection.commit() # 提交 DB 建立表结构
-            print("✅ [Summary Agent] 数据库表结构初始化/检查完成。")
+            # print("✅ [Summary Agent] 数据库表结构初始化/检查完成。")
             
         except Exception as e:
             print(f"❌ [Summary Agent] 数据库连接或初始化失败: {e}")
@@ -193,7 +193,7 @@ class DiagnoseExperienceBase:
             if 'connection' in locals() and connection.open:
                 connection.close() # 关闭连接
 
-    async def search(self, lab_name: str, keyword: str, limit: int = 4) -> str:
+    async def search(self, lab_name: str, keyword: str, limit: int = 3) -> str:
         """
         极速经验查询：精确匹配 lab_name，模糊匹配 fuzzy_complaint，返回 root_cause 不重复的结构化字符串。
         命中缓存后，彻底告别 DB I/O 与语料库分词开销。
@@ -367,23 +367,20 @@ if __name__ == "__main__":
         # 注意：__init__ 未定义 backend_model，这里去掉无效参数
         DB = DiagnoseExperienceBase()
         
-        # 1. 打印全部case
-        await DB.print_all_cases()
+        # # 1. 打印全部case
+        # await DB.print_all_cases()
 
-        # # 2. 查询 1 次 Case
-        # # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
-        # query_result = await DB.search(
-        #     lab_name="ospf_enterprise", 
-        #     keyword="断网", 
-        #     limit=10
-        # )
-        # print("\n👇 返回给 Agent 的 System Prompt 补充内容：\n")
-        # print(query_result)
-        # print("="*40)
+        # 2. 查询 1 次 Case
+        # 精确查询 ospf_enterprise，模糊查询包含 "彻底断网" 的记录
+        query_result = await DB.search(
+            lab_name="ospf_enterprise", 
+            keyword="某些主机断网", 
+            limit=10
+        )
+        print("\n👇 返回给 Agent 的 System Prompt 补充内容：\n")
+        print(query_result)
+        print("="*40)
 
-        # # 3. 清空
-        # # 测试结束后，恢复数据库原状 (可选)
-        # await DB.clear_all_cases()
 
     # 运行异步测试主函数
     asyncio.run(test())

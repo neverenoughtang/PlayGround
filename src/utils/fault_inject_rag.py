@@ -94,7 +94,7 @@ class FaultKnowledgeBase:
         self._ensure_milvus_running() # 在加载模型和连接数据库之前，先唤醒沉睡的容器
 
         # ----- 2. 加载 Embedding 模型（向量化模型）-----
-        print("[RAG] 正在加载 BGE-M3 向量化模型...")
+        # print("[RAG] 正在加载 BGE-M3 向量化模型...")
         self.embeddings = HuggingFaceEmbeddings(
             model_name="BAAI/bge-m3",            # 模型名称：北京智源的 BGE-M3，支持中英文，1024维输出
             model_kwargs={'device': 'cpu'},      # 用 CPU 推理（没有 GPU 或 GPU 不够时的选择）
@@ -103,7 +103,7 @@ class FaultKnowledgeBase:
         self.embedding_dim = 1024  # BGE-M3 模型输出的向量维度是 1024
 
         # ----- 3. 加载 Reranker 模型（重排模型）-----
-        print("[RAG] 正在加载 BGE-Reranker-v2-M3 重排模型...")
+        # print("[RAG] 正在加载 BGE-Reranker-v2-M3 重排模型...")
         self.cross_encoder = CrossEncoder(
             model_name_or_path="BAAI/bge-reranker-v2-m3",  # 北京智源的重排模型，专门给文档相关性打分
             device="cpu",       # 用 CPU 推理
@@ -115,7 +115,7 @@ class FaultKnowledgeBase:
         
         # ----- 5. 连接 Milvus 数据库并初始化 -----
         self.docs = []  # 初始化空列表，不论是从 MD 解析还是从 DB 拉取，最终都在这
-        print(f"[RAG] 正在连接企业级 Milvus 数据库 ({self.db_uri})...")
+        # print(f"[RAG] 正在连接企业级 Milvus 数据库 ({self.db_uri})...")
         self.client = MilvusClient(uri=self.db_uri)
         
         # 调用智能初始化方法：判断是建新表还是读取旧表恢复数据
@@ -125,30 +125,30 @@ class FaultKnowledgeBase:
         """
         一次性将网络领域黑话词典加载进内存，避免运行时冷启动开销
         """
-        print("[RAG] 正在预热 jieba NLP 模型与专有名词库...")
+        # print("[RAG] 正在预热 jieba NLP 模型与专有名词库...")
         for word in DOMAIN_WORDS:
             jieba.add_word(word)
         # 强行切分一个词，触发 jieba 内部大字典的懒加载机制
         _ = jieba.lcut("故障注入引擎热加载完成")
-        print("[RAG] NLP 模型预热完成！")
+        # print("[RAG] NLP 模型预热完成！")
 
     def _ensure_milvus_running(self):
         """
         Docker 状态检查与自启守护
         """
-        print("[RAG] 正在检查 Milvus 底层容器状态...")
+        # print("[RAG] 正在检查 Milvus 底层容器状态...")
         try:
             result = subprocess.run(
                 ["docker", "inspect", "-f", "{{.State.Running}}", "milvus-standalone"],
                 capture_output=True, text=True
             )
             if "true" not in result.stdout.lower():
-                print("[RAG] 发现 Milvus 容器组未运行，正在自动唤醒...")
+                # print("[RAG] 发现 Milvus 容器组未运行，正在自动唤醒...")
                 subprocess.run(
                     ["docker", "start", "milvus-etcd", "milvus-minio", "milvus-standalone"], 
                     check=True
                 )
-                print("[RAG] 容器组已拉起，正在等待 19530 端口服务就绪...")
+                # print("[RAG] 容器组已拉起，正在等待 19530 端口服务就绪...")
                 port_ready = False
 
                 # 轮询探测端口 (polling)
@@ -156,7 +156,7 @@ class FaultKnowledgeBase:
                     try:
                         with socket.create_connection(("127.0.0.1", 19530), timeout=1):
                             port_ready = True
-                            print("[RAG] 端口 19530 通信握手成功，Milvus 服务已完全就绪！")
+                            # print("[RAG] 端口 19530 通信握手成功，Milvus 服务已完全就绪！")
                             break
                     except OSError:
                         time.sleep(1)
@@ -175,7 +175,7 @@ class FaultKnowledgeBase:
         【文档切分 + 上下文增强】
         此处仅在 force_rebuild=True 或首次建库时被调用
         """
-        print("[RAG] 正在读取本地 Markdown 文档并进行语义切块...")
+        # print("[RAG] 正在读取本地 Markdown 文档并进行语义切块...")
         with open(self.md_path, "r", encoding="utf-8") as f:
             md_content = f.read()
 
@@ -264,7 +264,7 @@ class FaultKnowledgeBase:
         """
         把文档向量化、词频化并写入 Milvus 数据库
         """
-        print(f"[RAG] 正在生成语义向量与词元划分，并全量同步到 Milvus...")
+        # print(f"[RAG] 正在生成语义向量与词元划分，并全量同步到 Milvus...")
         
         texts = [doc.page_content for doc in self.docs]
         

@@ -80,22 +80,78 @@ class KlonetBaseAPI:
 
     def get_all_nodes(self) -> List[str]:
         """获取所有已部署的节点名，并排序保证输出顺序稳定"""
-        
         return self.lab.get_all_nodes()
+
+    def get_all_routers(self) -> List[str]:
+        """获取所有已部署的路由器名"""
+        topo_data = self.get_topo_json()
+        if "project" in topo_data and "topo" in topo_data["project"]:
+            topo = topo_data["project"]["topo"]
+        else:
+            topo = topo_data
+
+        routers = []
+        
+        # 检查专门的 routers 分类
+        for name, info in topo.get("routers", {}).items():
+            subtype = info.get("subtype", "").lower()
+            image_name = info.get("image_name", "").lower()
+            if "frr" in subtype or "frr" in image_name or "router" in subtype or "router" in image_name:
+                if name not in routers:
+                    routers.append(name)
+                    
+        return routers
 
     def get_all_hosts(self) -> List[str]:
         """获取所有已部署的主机名"""
+        topo_data = self.get_topo_json()
+        if "project" in topo_data and "topo" in topo_data["project"]:
+            topo = topo_data["project"]["topo"]
+        else:
+            topo = topo_data
+
+        hosts = []
         
-        return self.lab.get_all_hosts()
+        # 检查专门的 host 分类
+        for name, info in topo.get("hosts", {}).items():
+            subtype = info.get("subtype", "").lower()
+            image_name = info.get("image_name", "").lower()
+            if "ubuntu" in subtype or "ubuntu" in image_name:
+                if name not in hosts:
+                    hosts.append(name)
+                    
+        return hosts
     
     def get_all_ovs(self) -> List[str]:
-        
-        return self.lab.get_all_ovs()
-    
-    def get_all_bmv2(self) -> List[str]:
-        
-        return self.lab.get_all_bmv2()
+        """
+        获取所有 ovs 交换机
+        """
+        topo_data = self.get_topo_json()
+        if "project" in topo_data and "topo" in topo_data["project"]:
+            topo = topo_data["project"]["topo"]
+        else:
+            topo = topo_data
 
+        ovs_switches = []
+        
+        # 1. 检查专门的 switches 分类
+        for name, info in topo.get("switches", {}).items():
+            subtype = info.get("subtype", "").lower()
+            image_name = info.get("image_name", "").lower()
+            if "ovs" in subtype or "ovs" in image_name:
+                if name not in ovs_switches:
+                    ovs_switches.append(name)
+                    
+        # 2. 有些平台可能把 ovs 算作特殊的 host，也需要扫一遍
+        for name, info in topo.get("hosts", {}).items():
+            subtype = info.get("subtype", "").lower()
+            image_name = info.get("image_name", "").lower()
+            if "ovs" in subtype or "ovs" in image_name:
+                if name not in ovs_switches:
+                    ovs_switches.append(name)
+                    
+        return ovs_switches
+    
     def get_all_bmv2(self) -> List[str]:
         """
         获取拓扑中所有的 bmv2/p4 交换机节点名称

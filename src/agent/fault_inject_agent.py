@@ -5,7 +5,7 @@ import sys
 import time
 import json
 import traceback
-from typing import Dict, Any, TypedDict, List
+from typing import Dict, Any, Optional, TypedDict, List
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain.agents import create_agent
@@ -19,6 +19,7 @@ project_root = os.path.abspath(os.path.join(src_dir, ".."))
 if src_dir not in sys.path: sys.path.insert(0, src_dir)
 if project_root not in sys.path: sys.path.append(project_root)
 
+from mcp_server.klonet_base_api import KlonetBaseAPI  
 from utils.llm_models import load_model
 from utils.fault_inject_rag import FaultKnowledgeBase
 
@@ -63,8 +64,6 @@ async def prewarm_inject_caches(lab_name: str):
         custom_env = os.environ.copy()
         custom_env["LAB_NAME"] = lab_name
         custom_env.pop("PS1", None) # 消除终端提示符
-        # 删掉终端提示符变量，保持控制台清爽
-        custom_env.pop("PS1", None)
 
         server_path = os.path.join(mcp_server_dir, "klonet_server.py")
         connections = {"klonet_server": {"command": sys.executable, "args": [server_path], "transport": "stdio", "env": custom_env}}
@@ -79,6 +78,48 @@ async def prewarm_inject_caches(lab_name: str):
         _GLOBAL_INJECT_RAG_CACHE = FaultKnowledgeBase(force_rebuild=False)
         print("   ✅ 注入层 RAG 向量数据库与 NLP 预加载完成")
 
+# --- Linux TC 工具 (1个) ---
+@tool()
+def tc_set(
+    host_name: str,
+    link: str,
+    bw_kbps: Optional[int] = None,
+    delay_ms: Optional[int] = None,
+    jitter_ms: Optional[int] = None,
+    loss: Optional[int] = None,
+) -> str:
+    """
+    在主机的指定链路上**设置**流量控制 (TC) 参数
+    Args:
+        host_name: 主机名称
+        link: 链路名
+        bw_kbps: 带宽限制(可选)
+        delay_ms: 时延(ms, 可选)
+        jitter_ms: 抖动(ms, 可选)
+        loss: 丢包率(%, 可选)
+        
+    Returns:
+        response (str): 包含端口监听状态和 Python 推理进程详情。
+    """
+    lab = os.getenv("LAB_NAME")
+    API = KlonetBaseAPI(lab) 
+
+    config = {
+        "linkchoice": "static",
+        "link": link,
+        "ne": host_name
+    }
+
+    if bw_kbps is not None:
+        config["bw_kbps"] = str(bw_kbps)
+    if delay_ms is not None:
+        config["delay_us"] = str(delay_ms * 1000)
+    if jitter_ms is not None:
+        config["jitter_us"] = str(jitter_ms * 1000)
+    if loss is not None:
+        config["loss"] = str(loss)
+
+    return str(API.lab.configure_link(config=config))
 
 @tool
 def search_fault_manual(query: str, count: int = 2) -> str:
@@ -112,7 +153,7 @@ class FaultInjectAgent:
     """
     故障注入智能体（Agentic RAG 版本）
     """
-    def __init__(self, lab_name: str, max_steps: int, netenv_info: str, fault_query: str, backend_model: str = "qwen3.5-medium"):
+    def __init__(self, lab_name: str, max_steps: int, netenv_info: str, fault_query: str, backend_model: str = "qwen3.5-small"):
         self.lab_name = lab_name  
         self.max_steps = max_steps
         self.netenv_info = netenv_info
@@ -189,7 +230,7 @@ node_execute("r1", "pkill bgpd")
         # 将提示词块合并打印
         init_log = (
             f"\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
-            f"┃ 📜 [System Prompt / 故障注入智能体记忆初始化]                                ┃\n"
+            f"┃ 📜 [System Prompt / 故障注入智能体记忆初始化]                         ┃\n"
             f"┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n"
             f"{self.system_prompt}\n"
             f"{'='*70}"
@@ -209,7 +250,7 @@ node_execute("r1", "pkill bgpd")
                 await prewarm_inject_caches(self.lab_name)
             
             # 2. 直接使用全局缓存的 MCP 工具，不再在每次运行时重复拉起 Server！
-            tools = [submit_inject, search_fault_manual] + _INJECT_MCP_TOOLS_CACHE[self.lab_name]
+            tools = [submit_inject, search_fault_manual, tc_set] + _INJECT_MCP_TOOLS_CACHE[self.lab_name]
             
             # 3. 构建执行图
             agent_executor = create_agent(model=self.llm, tools=tools)

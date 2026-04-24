@@ -254,7 +254,7 @@ def ping_by_name(src_node: str, dst_name: str = "www.baidu.com") -> str:
     # 优化为 -c 4，加快执行速度
     return API._run_cmd(src_node, f"ping -c 4 -W 2 {dst_name}")
 
-# --- 通用节点执行工具 (1个) ---
+# --- 通用节点执行工具 (2个) ---
 @mcp.tool()
 def node_execute(node: str, cli_cmd: str) -> str:
     """
@@ -270,6 +270,41 @@ def node_execute(node: str, cli_cmd: str) -> str:
     lab = os.getenv("LAB_NAME")
     API = KlonetBaseAPI(lab) 
     return API._run_cmd(node, cli_cmd)
+
+# src/agent/diagnose_agent/tools.py
+from langchain_core.tools import tool
+import asyncio
+
+# klonet 节点执行方法封装成并发批处理
+@tool
+async def multi_node_execute(nodes_str: str, command: str) -> str:
+    """
+    【批处理专属】
+    同时在多个节点上并发执行相同的非破坏性查询命令。仅限查询类命令，严禁执行修改类命令。
+    Args:
+        nodes_str: 逗号分隔的节点名列表，例如 "h1,h2,h3,h4"
+        command: 要执行的查询命令，例如 "ip link show" 或 "ip route"
+    """
+    # 分析节点
+    node_list = [n.strip() for n in nodes_str.split(",") if n.strip()]
+    if not node_list:
+        return "错误：未提供节点列表。"
+    
+    # 异步并发结构
+    async def mock_execute(n):
+        try:
+            result = await asyncio.to_thread(node_execute, n, command)
+            return f"[{n}] 执行成功" + result
+        except Exception as e:
+            return f"[{n}] 执行失败: {str(e)}"
+            
+    results = await asyncio.gather(*(mock_execute(n) for n in node_list))
+    
+    final_output = []
+    for n, res in zip(node_list, results):
+        final_output.append(f"======== {n} ========\n{res}")
+        
+    return "\n".join(final_output)
     
 # --- bmv2 节点执行工具 (4个) --- 
 @mcp.tool()
@@ -442,49 +477,6 @@ def ovs_get_bridge_protocols(node: str, bridge_name: str) -> str:
     lab = os.getenv("LAB_NAME")
     API = KlonetBaseAPI(lab)
     return API._run_cmd(node, f"ovs-vsctl get bridge {bridge_name} protocols")
-
-# --- Linux TC 工具 (1个) ---
-@mcp.tool()
-def tc_set(
-    host_name: str,
-    link: str,
-    bw_kbps: Optional[int] = None,
-    delay_ms: Optional[int] = None,
-    jitter_ms: Optional[int] = None,
-    loss: Optional[int] = None,
-) -> str:
-    """
-    在主机的指定链路上**设置**流量控制 (TC) 参数
-    Args:
-        host_name: 主机名称
-        link: 链路名
-        bw_kbps: 带宽限制(可选)
-        delay_ms: 时延(ms, 可选)
-        jitter_ms: 抖动(ms, 可选)
-        loss: 丢包率(%, 可选)
-        
-    Returns:
-        response (str): 包含端口监听状态和 Python 推理进程详情。
-    """
-    lab = os.getenv("LAB_NAME")
-    API = KlonetBaseAPI(lab) 
-
-    config = {
-        "linkchoice": "static",
-        "link": link,
-        "ne": host_name
-    }
-
-    if bw_kbps is not None:
-        config["bw_kbps"] = str(bw_kbps)
-    if delay_ms is not None:
-        config["delay_us"] = str(delay_ms * 1000)
-    if jitter_ms is not None:
-        config["jitter_us"] = str(jitter_ms * 1000)
-    if loss is not None:
-        config["loss"] = str(loss)
-
-    return str(API.lab.configure_link(config=config))
 
 
 # --- AI 算网场景专属探测工具 (2个) ---

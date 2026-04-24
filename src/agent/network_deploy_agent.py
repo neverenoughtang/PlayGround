@@ -1,8 +1,8 @@
-import asyncio
 import os
+import re
 import sys
 import time
-import subprocess
+import asyncio
 from typing import TypedDict
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
@@ -29,17 +29,31 @@ from fault_inject_agent import prewarm_inject_caches
 # ==========================================
 # 辅助函数: 精简拓扑信息算法 + 全局预热
 # ==========================================
+def natural_keys(text: str):
+    """
+    将字符串拆分为文本和数字的列表，用于正确排序。
+    例如: 'h10' -> ['h', 10, '']
+    'h2' -> ['h', 2, '']
+    这样 2 就会在 10 前面。
+    """
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', text)]
+
 def simplify_topo(lab_name: str, raw_topo: dict) -> str:
     """
     接收全量的拓扑 JSON 字典，过滤掉所有非网络特性的冗余参数，
     仅保留节点(名称/类型/接口/IP/网关)和链路(源/目的及对应IP)。
+    【已优化】：按照 h1, h2, ..., h10 的自然数字顺序输出
     """
     simplified = []
     simplified.append(f"{lab_name} 的拓扑信息:")
     
-    # 1. 提炼节点信息
+    # ==========================================
+    # 1. 提炼节点信息并进行自然排序
+    # ==========================================
     simplified.append("[节点列表]")
     categories = ['controllers', 'hosts', 'routers', 'switches', 'dpdks']
+    
+    node_lines = [] # 暂存所有的节点字符串，以便排序
     for category in categories:
         if category not in raw_topo or not raw_topo[category]:
             continue
@@ -48,15 +62,13 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
             # 基础网络属性
             node_type = node_info.get('type', category)
             
-            # 👇 【新增修复】：智能推断节点真实类型 (覆盖分类不准的情况)
+            # 智能推断节点真实类型
             image_name = node_info.get('image_name', '').lower()
             subtype = node_info.get('subtype', '').lower()
-            
             if 'ryu' in image_name or 'ryu' in subtype:
                 node_type = 'ryu'
             elif 'bmv2' in image_name or 'bmv2' in subtype or 'p4' in image_name:
                 node_type = 'bmv2'
-            # 👆 =======================================================
             
             gateway = node_info.get('gateway', '')
             interfaces = node_info.get('interfaces', [])
@@ -67,7 +79,7 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
                 ip = iface.get('ip', '')
                 raw_iname = iface.get('name', 'ethX')
 
-                # 修复：安全解析子网掩码，防止空字符串或非法格式导致 int() 报错
+                # 安全解析子网掩码
                 netmask = iface.get('netmask', '') 
                 mask = ""
                 if netmask and '.' in netmask:
@@ -75,47 +87,59 @@ def simplify_topo(lab_name: str, raw_topo: dict) -> str:
                         mask_len = sum(bin(int(x)).count('1') for x in netmask.split('.'))
                         mask = f"/{mask_len}"
                     except ValueError:
-                        mask = "" # 如果解析失败，就不带掩码后缀
+                        mask = "" 
 
-                # 修正接口名称：如果接口名以节点名开头 (如 h1s1_1)，则去掉节点名，加上 'to'
+                # 修正接口名称
                 if raw_iname.startswith(node_name):
                     actual_iname = "to" + raw_iname[len(node_name):]
                 else:
                     actual_iname = raw_iname
 
-                # 加上 IP
                 if ip:
                     iface_strs.append(f"{actual_iname}({ip}{mask})")
                 else:
                     iface_strs.append(f"{actual_iname}")
             
             # 拼接单节点信息
-            # 这里的 [node_type] 就会根据上面的智能推断显示出 [ryu] 或 [bmv2]
             info_str = f"- {node_name} [{node_type}]"
             if iface_strs:
                 info_str += f" | 接口: {', '.join(iface_strs)}"
             if gateway:
                 info_str += f" | 默认网关: {gateway}"
                 
-            simplified.append(info_str)
+            # 将 (节点名, 格式化后的字符串) 存入列表
+            node_lines.append((node_name, info_str))
             
-    # 2. 提炼链路信息 (原代码保持不变)
+    # 根据 node_name 进行自然排序
+    node_lines.sort(key=lambda x: natural_keys(x[0]))
+    for _, info in node_lines:
+        simplified.append(info)
+            
+    # ==========================================
+    # 2. 提炼链路信息并进行自然排序
+    # ==========================================
     simplified.append("\n[链路]")
     links = raw_topo.get('links', {})
+    
+    link_lines = [] # 暂存所有的链路字符串，以便排序
     for link_name, link_info in links.items():
         src = link_info.get('source', '')
         src_ip = link_info.get('sourceIP', '')
         tgt = link_info.get('target', '')
         tgt_ip = link_info.get('targetIP', '')
         
-        # 移除掩码后缀(如 /24)，保持视觉清爽
         src_ip_clean = src_ip.split('/')[0] if src_ip else ""
         tgt_ip_clean = tgt_ip.split('/')[0] if tgt_ip else ""
         
         src_str = f"{src}({src_ip_clean})" if src_ip_clean else src
         tgt_str = f"{tgt}({tgt_ip_clean})" if tgt_ip_clean else tgt
         
-        simplified.append(f"- 链路 {link_name}: {src_str} <---> {tgt_str}")
+        link_lines.append((link_name, f"- 链路 {link_name}: {src_str} <---> {tgt_str}"))
+        
+    # 根据 link_name 进行自然排序
+    link_lines.sort(key=lambda x: natural_keys(x[0]))
+    for _, info in link_lines:
+        simplified.append(info)
         
     return "\n".join(simplified)
 

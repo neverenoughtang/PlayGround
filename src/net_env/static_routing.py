@@ -27,9 +27,9 @@ class StaticRouting(NetworkEnvBase):
 
         # 2. 创建链路
         # 路由器互联
-        self.lab.add_link(r1, r2, link_name="l_r1_r2")
-        self.lab.add_link(r2, r3, link_name="l_r2_r3")
-        self.lab.add_link(r3, r1, link_name="l_r3_r1")
+        self.lab.add_link(r1, r2)
+        self.lab.add_link(r2, r3)
+        self.lab.add_link(r3, r1)
 
         # 路由器 - 交换机
         self.lab.add_link(r1, switches[0]); self.lab.add_link(r1, switches[1])
