@@ -105,7 +105,7 @@ async def supervisor_node(state: dict):
 
 """
     # 重试 3 次
-    llm = load_model(backend_model="qwen3.5-medium")
+    llm = load_model(backend_model="qwen3.6-big")
     max_retries = 3
     decision = {}
     for attempt in range(max_retries):

@@ -48,7 +48,7 @@ async def main():
             deploy_graph = build_deploy_graph()
             deploy_state = await deploy_graph.ainvoke({
                 "user_query": deploy_query, 
-                "deploy_model": "qwen3.5-small", # 默认使用 qwen 决策
+                "deploy_model": "qwen3.6-medium", # 默认使用 qwen 决策
                 "lab_name": "", 
                 "deploy_status": "", 
                 "netenv_info": ""
@@ -78,7 +78,7 @@ async def main():
                 "lab_name": lab_name,
                 "netenv_info": netenv_info,
                 "fault_query": fault_query,
-                "actor_model": "qwen3.5-medium", # 注入流程相对轻量
+                "actor_model": "qwen3.6-medium", # 注入流程相对轻量
                 "max_steps": 150,
                 "inject_result": "",
                 "problem_info": "",
@@ -147,7 +147,7 @@ async def main():
             "execution_time": diag_result["execution_time"],
             "token_usage": diag_result["token_usage"],
             "trajectory": diag_result["trajectory"], 
-            "judge_model": "qwen3.5-big" # 裁判使用最强推理模型
+            "judge_model": "qwen3.6-big" # 裁判使用最强推理模型
         })
 
         print("\n" + "=" * 60)

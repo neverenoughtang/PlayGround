@@ -55,7 +55,7 @@ import jieba
 from rank_bm25 import BM25Plus
 jieba.setLogLevel(logging.WARNING) # 强制屏蔽 jieba 内部的构建字典提示
 
-from network_domain_words import DOMAIN_WORDS
+from .network_domain_words import DOMAIN_WORDS
 
 
 # ==========================================

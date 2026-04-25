@@ -45,7 +45,7 @@ class JudgeOutput(BaseModel):
 # 2. 评测智能体核心
 # ==========================================
 class JudgeAgent:
-    def __init__(self, backend_model: str = "qwen3.5-big"):
+    def __init__(self, backend_model: str = "qwen3.6-big"):
         # 裁判属于高难度推理任务，固定分配大杯模型
         self.llm = load_model(backend_model=backend_model).with_structured_output(JudgeOutput)
         self.prompt = ChatPromptTemplate.from_messages([

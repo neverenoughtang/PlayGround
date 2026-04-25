@@ -153,7 +153,7 @@ class FaultInjectAgent:
     """
     故障注入智能体（Agentic RAG 版本）
     """
-    def __init__(self, lab_name: str, max_steps: int, netenv_info: str, fault_query: str, backend_model: str = "qwen3.5-small"):
+    def __init__(self, lab_name: str, max_steps: int, netenv_info: str, fault_query: str, backend_model: str = "qwen3.6-medium"):
         self.lab_name = lab_name  
         self.max_steps = max_steps
         self.netenv_info = netenv_info

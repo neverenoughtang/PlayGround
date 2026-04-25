@@ -165,7 +165,7 @@ class DeployAgent:
     """
     网络拓朴部署决策智能体：分析用户需求并选择正确的拓扑脚本
     """
-    def __init__(self, backend_model: str = "qwen3.5-small"):
+    def __init__(self, backend_model: str = "qwen3.6-medium"):
         self.llm = load_model(backend_model=backend_model)
         # 使用 structured_output 强制输出 TopologySelection 的 JSON 格式
         self.structured_llm = self.llm.with_structured_output(TopologySelection)
@@ -207,7 +207,7 @@ async def analyze_node(state: DeployState):
     【用户意图解析】
     分析需求并确定 lab_name
     """
-    deployer = DeployAgent(backend_model=state.get("deploy_model", "qwen3.5-small"))
+    deployer = DeployAgent(backend_model=state.get("deploy_model", "qwen3.6-medium"))
     res = await deployer.analyze_requirement(state["user_query"])
     return {"lab_name": res["lab_name"]}
 
@@ -353,7 +353,7 @@ if __name__ == "__main__":
         # 2. 模拟外部输入 
         initial_state = {
             "user_query": "我需要一个p4网络",
-            "deploy_model": "qwen3.5-small",
+            "deploy_model": "qwen3.6-medium",
             "lab_name": "",
             "deploy_status": "",
             "netenv_info": ""

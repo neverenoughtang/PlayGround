@@ -12,7 +12,7 @@ async def worker_think_node(state: WorkerState):
     Worker 为高并发节点，统一调度，保证速度。
     """
     tools = await create_worker_tools(state["lab_name"])
-    llm = load_model(backend_model="qwen3.5-medium").bind_tools(tools)
+    llm = load_model(backend_model="qwen3.6-medium").bind_tools(tools)
 
     if not state["messages"]:
         sys_prompt = f"""你是一名网络排障专家，严格依照下方资料，验证网络中是否存在指派的故障。
@@ -185,12 +185,36 @@ async def worker_tool_filter_node(state: WorkerState):
 
         # 2. 处理提交工具
         if t_name == "submit_diagnosis":
-            try:
-                res = json.loads(t_args.get("faults_json_str", "{}"))
-                print(f"🎯 [{state['worker_id']}] 确认状态: {res.get('existing', False)}")
-            except Exception:
-                res = {"existing": False, "location": [], "reason": "解析失败"}
-            return "submit", ToolMessage(tool_call_id=tc["id"], name=t_name, content="提交成功。"), res
+            has_sub = True
+            
+            # 安全提取并强制转换 existing 状态
+            raw_existing = t_args.get("existing", False)
+            if isinstance(raw_existing, str):
+                is_existing = raw_existing.lower() in ["true", "1", "yes", "y", "t"]
+            else:
+                is_existing = bool(raw_existing)
+                
+            # 安全提取 location
+            raw_loc = t_args.get("location", [])
+            if isinstance(raw_loc, str):
+                # 如果模型愚蠢地返回了字符串 "['h1']" 甚至是 "h1"
+                import ast
+                try:
+                    clean_loc = ast.literal_eval(raw_loc)
+                    if not isinstance(clean_loc, list): clean_loc = [raw_loc]
+                except:
+                    clean_loc = [raw_loc] if raw_loc.strip() else []
+            else:
+                clean_loc = list(raw_loc) if raw_loc else []
+            
+            sub_res = {
+                "existing": is_existing,
+                "location": clean_loc,
+                "reason": str(t_args.get("reason", "未提供理由"))
+            }
+            
+            print(f"🎯 [{state['worker_id']}] 成功捕获结论! 故障存在: {sub_res['existing']} | 位置: {sub_res['location']}")
+            return "submit", ToolMessage(tool_call_id=tc["id"], name=t_name, content="提交成功，排查结束。"), sub_res
         
         # 3. 执行真实的底层网络工具
         t_func = tool_map.get(t_name)
@@ -207,7 +231,7 @@ async def worker_tool_filter_node(state: WorkerState):
         tokens = {"in": 0, "out": 0}
         
         if len(raw_str) > 100: 
-            llm = load_model(backend_model="qwen3.5-medium")
+            llm = load_model(backend_model="qwen3.6-medium")
             prompt = f"""你的职责是总结提炼网络故障诊断 agent 调用工具的输出，防止上下文太长。
     【当前网络拓扑】
     {state["netenv_info"]}

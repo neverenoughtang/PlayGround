@@ -51,10 +51,10 @@ async def summarizer_node(state: DiagnoseState):
     global_trajectory = "\n\n".join(full_trajectory_logs)
 
     # 4. 调用 Big 模型，结构化提取正确的排查流写入 SQL
-    # 【注意】这里必须使用 qwen3.5-big 来保证 JSON 输出的准确性
+    # 【注意】这里必须使用 qwen3.6-big 来保证 JSON 输出的准确性
     if submitted_set:
-        print("🤖 [Summarizer] 正在调用 Big 模型抽取结构化经验...")
-        llm = load_model(backend_model="qwen3.5-medium")
+        print("🤖 [Summarizer] 正在调用抽取结构化经验...")
+        llm = load_model(backend_model="qwen3.6-big")
         extract_prompt = f"""
         请从以下用户投诉+并行诊断记录中，提取出 **一条或多条** **成功发现故障** 的 React(Thought-Action-Observation) 逻辑步骤。
         要求输出为一个包含模糊投诉、故障名和关键步骤的 JSON 数组格式：
