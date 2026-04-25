@@ -39,15 +39,20 @@ async def run_worker_wrapper(state: WorkerState):
     # 将 Worker 的 token 提取并累加到 Global State 的字典中
     # 由于 LangGraph 对于 dict 的合并默认是覆盖，我们需要写一个安全的累加合并
     tokens_to_add = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    tool_calls_to_add = 0
+
     for w in results:
         t = w.get("token_usage", {})
         tokens_to_add["input_tokens"] += t.get("input_tokens", 0)
         tokens_to_add["output_tokens"] += t.get("output_tokens", 0)
         tokens_to_add["total_tokens"] += t.get("total_tokens", 0)
-        
+        # 累加每个 Worker 的工具调用数
+        tool_calls_to_add += w.get("tool_call_count", 0)
+
     return {
         "worker_results": results,
-        "global_token_usage": tokens_to_add # 在 state.py 中将 global_token_usage 设置为支持 operator.add 的合并方式
+        "global_token_usage": tokens_to_add, # 在 state.py 中将 global_token_usage 设置为支持 operator.add 的合并方式
+        "global_tool_calls": tool_calls_to_add
     }
 
 # 将完结逻辑与派发逻辑合二为一，将路由节点声明为 async def
@@ -60,36 +65,13 @@ async def dispatch_workers_node(state: DiagnoseState):
     
     # 2. 开始组装并发 Send 对象
     hypotheses = state["hypotheses"]
-    experiences = state.get("experiences", [])
-    
-    # 防御性编程：补齐 experiences 长度
-    while len(experiences) < len(hypotheses):
-        experiences.append("无特定历史经验参考，请严格遵循知识库排查。")
+    print(f"🚀 [Dispatch] 唤醒 {len(hypotheses)} 个 Worker 并发执行...")
         
-    parsed_tasks = []
-    rag_tasks = []
-    
-    for hyp in hypotheses:
-        parts = hyp.split("|")
-        fault_name = parts[0].strip()
-        symptom = parts[1].strip() if len(parts) > 1 else "未知表象"
-        parsed_tasks.append((fault_name, symptom))
-        
-        # 将异步调用装入任务列表
-        rag_tasks.append(search_knowledge(fault_name, state["lab_name"], knowledge_count=1))
-        
-    print(f"📚 [Dispatch] 正在为 {len(hypotheses)} 个假设并发检索 Milvus 故障知识...")
-    rag_results = await asyncio.gather(*rag_tasks)
-    
-    print(f"🚀 [Dispatch] 知识就绪，唤醒 {len(hypotheses)} 个 Worker 并发执行...")
     sends = []
-    for i, ((fault_name, symptom), exp, rag_bg) in enumerate(zip(parsed_tasks, experiences, rag_results)):
+    for i, hyp in enumerate(hypotheses):
         worker_state = WorkerState(
             worker_id=f"Worker-{state['iteration_count']}-{i+1}",
-            target_fault=fault_name,
-            target_symptom=symptom,    
-            knowledge_bg=rag_bg,       # 提取出的 RAG 知识背景
-            success_exp=exp,           
+            target_fault=hyp,            
             lab_name=state["lab_name"], 
             netenv_info=state["netenv_info"],
             problem_info=state["problem_info"], 
@@ -159,13 +141,11 @@ async def diagnose_fault(
         
         # 新增的预热数据字段
         "inspector_result": "", 
-        "experience_result": "",
         
         # 动态编排循环字段
         "iteration_count": 0, 
         "history_reports": [], 
         "hypotheses": [], 
-        "experiences": [],
         "next_action": "continue",
         
         # 结果与统计指标

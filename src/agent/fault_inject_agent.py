@@ -141,7 +141,7 @@ def submit_inject(result: str, synthesized_problem_info: str, expected_faults_js
     当且仅当确认【所有】故障都已注入完成（或确认彻底失败）时调用。必须且只能调用一次。
     Args:
         result: 注入结果 (成功填 "successful"，失败填 "fatal")
-        synthesized_problem_info: 综合所有成功注入的故障，用大白话编写一句符合逻辑的“用户投诉信息”(如: "主机h1跨域通信不通，且h2通信延迟很高")。
+        synthesized_problem_info: 综合所有成功注入的故障，编写一句含糊的“用户投诉信息”(如: "某主机跨域通信不通，且某主机通信延迟很高")。
         expected_faults_json: 注入成功的故障和对应节点的 JSON 字典字符串。必须严格遵循格式：'{"link_loss": ["h1", "h3"], "bgp_neighbor_shutdown": ["r1"]}'
     """
     return "提交成功，任务结束..."

@@ -37,6 +37,7 @@ async def main():
     print("=" * 60)
 
     lab_name = None
+    total_time = 0
     try:
         # ==========================================
         # 1. 网络场景部署 
@@ -113,7 +114,8 @@ async def main():
         while True:
             steps_input = input("[HIL - 诊断阶段] 请输入最大执行次数 (默认 200): ")    
             max_steps_input = int(steps_input) if steps_input else 200
-            
+            start_time = time.perf_counter()
+
             diag_result = await diagnose_fault(
                 lab_name=lab_name,
                 netenv_info=netenv_info,
@@ -123,6 +125,7 @@ async def main():
                 time_limit=1800.0
             )
 
+            total_time = time.perf_counter() - start_time
             # HIL: 抉择下一步
             choice = input("\n[HIL] 👉 请选择下一步:\n"
                            "  - 输入 'r' 重新进行诊断\n"
@@ -140,20 +143,15 @@ async def main():
         judge_state = await judge_graph.ainvoke({
             "netenv_info": netenv_info,
             "problem_info": problem_info,
-            "final_faults": diag_result["final_faults"],
-            "precision": diag_result["precision"],
-            "recall": diag_result["recall"],
-            "tool_call_count": diag_result["tool_call_count"],
-            "execution_time": diag_result["execution_time"],
-            "token_usage": diag_result["token_usage"],
-            "trajectory": diag_result["trajectory"], 
+            "final_faults": diag_result.get("final_faults", {}),
+            "precision": diag_result.get("precision", 0.0),
+            "recall": diag_result.get("recall", 0.0),
+            "tool_call_count": diag_result.get("global_tool_calls", 0),
+            "execution_time": total_time or diag_result.get("execution_time"),
+            "token_usage": diag_result.get("global_token_usage", {}),
+            "trajectory": diag_result.get("trajectory", "无轨迹记录"), 
             "judge_model": "qwen3.6-big" # 裁判使用最强推理模型
         })
-
-        print("\n" + "=" * 60)
-        print(f"🏆 [Judge] 最终综合评分: {judge_state['综合_score']} / 100")
-        print(f"📝 [Judge] 详细评价理由:\n{judge_state['subjective_reasoning']}")
-        print("=" * 60)
 
     except KeyboardInterrupt:
         print("\n⚠️ [System] 检测到用户强制中断 (Ctrl+C)。")

@@ -23,6 +23,12 @@ def add_token_usage(left: dict, right: dict) -> dict:
         "total_tokens": left.get("total_tokens", 0) + right.get("total_tokens", 0)
     }
 
+# 一个安全的整数累加器，防止 None 导致崩溃
+def add_int(left: int, right: int) -> int:
+    if left is None: left = 0
+    if right is None: right = 0
+    return left + right
+
 class WorkerResult(TypedDict):
     """单个诊断 Worker 的提交结果"""
     worker_id: str
@@ -51,26 +57,21 @@ class DiagnoseState(TypedDict):
     iteration_count: int
     next_action: str
     hypotheses: List[str]        
-    experiences: List[str]       
     
-    # 【防呆装甲】所有列表全部换上无敌累加器，彻底告别 list+str 崩溃！
     history_reports: Annotated[List[str], invincible_list_adder] 
     worker_results: Annotated[List[WorkerResult], invincible_list_adder] 
     
     final_faults: Dict[str, List[str]]
     global_token_usage: Annotated[dict, add_token_usage]
+    global_tool_calls: Annotated[int, add_int]
     precision: float
     recall: float
     trajectory: str
-    global_tool_calls: int
 
 class WorkerState(TypedDict):
     """子智能体（Worker）内部局部状态"""
     worker_id: str
     target_fault: str            # 只负责一种故障
-    target_symptom: str          # 【新增】对应的模糊投诉表象
-    knowledge_bg: str            # 【新增】预先查好的 RAG 知识背景
-    success_exp: str             # 【新增】Supervisor 分配的成功经验
 
     lab_name: str
     netenv_info: str

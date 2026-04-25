@@ -379,18 +379,8 @@ if __name__ == "__main__":
         print("="*40)
 
         # 2. 删除
-        await DB.delete_case_by_id(59)
-        await DB.delete_case_by_id(60)
-        await DB.delete_case_by_id(61)
-        await DB.delete_case_by_id(62)
-        await DB.delete_case_by_id(63)
-        await DB.delete_case_by_id(64)
-        await DB.delete_case_by_id(65)
-        await DB.delete_case_by_id(66)
-        await DB.delete_case_by_id(67)
-        await DB.delete_case_by_id(68)
-        await DB.delete_case_by_id(69)
-        await DB.delete_case_by_id(70)
+        tasks = [DB.delete_case_by_id(id) for id in range(59, 80)]
+        await asyncio.gather(*tasks)
 
         # 3. 打印全部case
         await DB.print_all_cases()

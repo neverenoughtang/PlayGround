@@ -154,7 +154,7 @@ async def global_inspector(state: DiagnoseState):
     利用 asyncio.to_thread 极速并发下发命令。彻底断绝 Agent 胡乱调用 O(n^2) 耗时工具的可能性。
     """
     print("\n🔍 [Inspector] 正在底座线程池中极速并发采集全网底层健康快照...")
-    inspector_summary = ""
+    inspector_summary = "[原始巡检数据]"
 
     try:
         # 将重度阻塞操作卸载至后台线程，保证 Event Loop 不被卡死
@@ -166,17 +166,16 @@ async def global_inspector(state: DiagnoseState):
 
     # 使用 Small 模型进行快速摘要提取，剔除正常冗余信息
     print("🧠 [Inspector] 正在压缩底层日志...")
-    llm = load_model(backend_model="qwen3.6-medium")
-    prompt = f"网络场景：{state['lab_name']}。请基于以下全网状态快照，**全面**总结出明显的异常点(如 ping不通、网卡DOWN、路由邻居卡在Idle等)。只输出纯粹的异常结论。\n\n{raw_info}"
+    llm = load_model(backend_model="qwen3.6-big")
+    prompt = f"网络场景：{state['lab_name']}。请基于以下全网状态快照，**全面**总结出明显的异常点(如 ping不通、延迟高、丢包、ARP/MAC地址异常、网卡DOWN、路由邻居卡在Idle等)。只输出纯粹的异常结论。\n\n{raw_info}"
     
     try:
         res = await llm.ainvoke([HumanMessage(content=prompt)])
-        inspector_summary += f"【全局巡检报告】\n{res.content}"
+        inspector_summary += f"[全局巡检报告]\n{res.content}"
     except Exception as e:
-        inspector_summary += f"【巡检摘要失败】: {e}"
+        inspector_summary += f"[巡检摘要失败] {e}"
     
     print("✅ [Inspector] 全局底检任务着陆！")
-    print(raw_info)
     print(inspector_summary)
 
     return {"inspector_result": inspector_summary}

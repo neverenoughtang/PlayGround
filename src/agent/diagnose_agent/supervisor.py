@@ -65,40 +65,32 @@ async def supervisor_node(state: dict):
 【全局巡检】
 {state["inspector_result"]}
 
-【成功排障经验】
-{state.get("experience_result", "暂无经验")}
-
 【历史排查总时间线】
-这是你之前几轮的反思总结，不要重复测已经排除的故障！
-{chr(10).join(history_reports) if history_reports else "暂无历史记录。"}
+{history_text if history_text else "暂无历史记录。"}
 
 【刚刚完成的 Worker 排查反馈】
 {current_feedback}
-基于这些反馈决定下一步。
 
-【当前场景所有可能的故障】
-{relevant_faults}
-
-🚨 【绝对禁区（已排除的故障黑名单）】
+【绝对禁区】
 [{black_list_str}]
-注意：你绝对、绝对不允许在这一轮中再次提出上述黑名单中的故障！如果你重复提出，将被系统立刻判定为重大失职！
+🚨注意：绝对不允许再次提出黑名单中的故障！违者严惩！
+
+【可用故障】
+{relevant_faults}
 
 【决策规范】
 请你严格进行分步思考，并输出如下 JSON 格式：
 {{
-    // 第一步：反思。仔细阅读【刚刚完成的 Worker 排查反馈】，总结出哪些故障被排除了，哪些有了新发现。如果是第一轮，请写“启动初次排查，暂无反馈”。
+    // 第一步：反思。仔细阅读【刚刚完成的 Worker 排查反馈】，总结出哪些故障被排除了，哪些有了新发现。如果是第一轮，请写“初次排查，暂无反馈”。
     "round_summary": "从 WorkerXX 的 xx, 可以确定故障 xx; ...", 
     
     // 第二步：行动。若已有充分证据确诊，或无路可走，填 "finish"。若还需排查，填 "continue"。
     "action": "continue", 
     
-    // 第三步：假设。仅在 continue 时填写，1~4 个你想让 Worker 并行去验证的假设。格式必须严格为 "故障标识 | 对应的模糊投诉表象" (绝对不要包含上一轮已经【排除】的故障！)
-    "hypotheses": ["故障名1 | 表象1", "故障名2 | 表象2" ...], 
-    
-    // 第四步：经验指导。仅在 continue 时填写，从【成功排障经验】中为每一个 hypotheses 提取指导。数组长度必须对齐！
-    "experiences": ["经验1", "经验2" ...], 
-    
-    // 第五步：最终结论。仅在 finish 时填写，输出最终确诊的故障和节点。
+    // 第三步：假设。仅在 continue 时填写，1~4 个你想让 Worker 并行去验证的假设。)
+    "hypotheses": ["故障名1", "故障名2" ...], 
+
+    // 第四步：最终结论。仅在 finish 时填写，输出最终确诊的故障和节点。
     "final_faults": {{"故障名1": ["节点名1", "节点名2" ...],
                       "故障名2": ["节点名1", "节点名2" ...] ...}} 
 }}
@@ -134,7 +126,6 @@ async def supervisor_node(state: dict):
         "history_reports": new_history,  # 这里传入列表 []，结合 manage_history_reports 会安全相加
         "next_action": decision.get("action", "continue"),
         "hypotheses": decision.get("hypotheses", []),
-        "experiences": decision.get("experiences", []),
         "final_faults": decision.get("final_faults", {}),
         "worker_results": "CLEAR"        # 这里传入字符串，触发 manage_worker_results 的清空逻辑
     }
