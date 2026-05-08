@@ -387,8 +387,8 @@ async def process_chat(conv_id: str, req: MessageReq):
             lab = conv['context'].get('lab_name', '')
             if lab: reset_topology(lab)
             conv['state'] = 'AWAITING_DEPLOY'
-            # 打印 HIL 路由日志
-            active_conv_id_temp = conv_id
+           
+            active_conv_id_temp = conv_id  # 打印 HIL 路由日志
             conv['messages'].append({"role": "assistant", "content": "\n [System] 拓扑已销毁。\n\n **[HIL] 👉 请重新输入您要部署的网络场景：**"})
             save_conversations()
             if fastapi_loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps({"type": "done"}), conv_id), fastapi_loop)
@@ -436,4 +436,4 @@ async def websocket_endpoint(websocket: WebSocket, conv_id: str):
 
 if __name__ == "__main__":
     print("🚀 Nika Web Server (四大 Agent 集成) is running at http://127.0.0.1:8080")
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=8080, reload=True)

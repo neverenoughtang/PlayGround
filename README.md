@@ -1,8 +1,8 @@
-# 🛡️ Multi-Agent System & Benchmark for Network Fault Diagnosis
+# 🛡️ Argus: Multi-Agent System & Benchmark for Network Fault Diagnosis
 
 ## 📖 Project Background
 
-As network architectures evolve toward higher complexity—spanning traditional dynamic routing, Software-Defined Networking (SDN), and programmable data planes—troubleshooting has become increasingly challenging. While Large Language Models (LLMs) show immense promise in IT operations, traditional evaluation methods rely on static datasets or manual scenarios. These approaches fail to objectively measure an LLM's true reasoning capabilities in dynamic, multi-step network environments.
+As network architectures evolve toward higher complexity—spanning traditional dynamic routing and Software-Defined Networking (SDN)—troubleshooting has become increasingly challenging. While Large Language Models (LLMs) show immense promise in IT operations, traditional evaluation methods rely on static datasets or manual scenarios. These approaches fail to objectively measure an LLM's true reasoning capabilities in dynamic, multi-step network environments.
 
 **Argus**  bridges this gap. It is an automated, full-lifecycle digital twin sandbox and benchmark platform. It provides a standardized infrastructure encompassing topology building, automated chaos injection, multi-agent diagnosis, and quantitative scoring. Argus is designed to push the boundaries of automated network operations by offering a highly reproducible environment to test, validate, and evolve diagnostic LLM agents.
 
