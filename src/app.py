@@ -435,5 +435,5 @@ async def websocket_endpoint(websocket: WebSocket, conv_id: str):
         manager.disconnect(websocket, conv_id)
 
 if __name__ == "__main__":
-    print("🚀 Nika Web Server (四大 Agent 集成) is running at http://127.0.0.1:8000")
-    uvicorn.run("app:app", host="0.0.0.0", port=8000)
+    print("🚀 Nika Web Server (四大 Agent 集成) is running at http://127.0.0.1:8080")
+    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)

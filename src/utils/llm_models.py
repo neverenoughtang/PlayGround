@@ -12,10 +12,10 @@ def load_model(backend_model: str = "gemini-3-flash-preview") -> BaseChatModel:
     统一使用 ChatOpenAI 接口加载大模型，完美兼容 LangGraph 和 MCP。
     """
     # 1. 实验室本地/云端部署的开源大模型
-    if backend_model in ["qwen3.5-27b"]:
+    if "qwen" in backend_model:
         llm = ChatOpenAI(
             model=backend_model,
-            base_url=os.getenv("SMALL_URL"),
+            base_url=os.getenv("BIG_URL"),
             api_key="any",
             temperature=0 # 排障任务必须为0，保证工具调用稳定性
         )

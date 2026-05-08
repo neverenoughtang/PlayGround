@@ -309,7 +309,7 @@
                 };
 
                 const getPlaceholder = () => {
-                    if (currentState.value === 'DONE') return "✅ 测试全流程已结束，终端锁定。请开启新对话。";
+                    if (currentState.value === 'DONE') return ""; // ✅ 测试全流程已结束，终端锁定。请开启新对话。
                     if (isInputLocked.value) return "⏳ 正在执行指令或打印终端日志...";
                     return "请输入指令内容 (回车发送)...";
                 };
@@ -317,7 +317,7 @@
                 const headerInfo = computed(() => {
                     const lab = contextData.value?.lab_name || '未部署场景';
                     const fault = contextData.value?.expected_fault || '未注入故障';
-                    return `【场景】${lab}  |  【故障】${fault}  |  【状态】${currentState.value || '初始化'}`;
+                    return `[场景] ${lab}  |  [故障] ${fault}  |  [状态] ${currentState.value || '初始化'}`;
                 });
 
                 const loadHistory = async () => {
